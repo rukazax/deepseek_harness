@@ -1,7 +1,7 @@
 {
   "name": "dsh-mcp-client",
-  "version": "1.0.0",
-  "description": "MCP client plugin for DeepSeek Harness: spawns MCP servers and exposes their tools as native DSH tools.",
+  "version": "1.1.0",
+  "description": "MCP client plugin for DeepSeek Harness: spawns MCP servers, exposes their tools as native DSH tools, and restores Kimi chats as native DSH sessions.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -20,7 +20,9 @@
     "mcp",
     "model-context-protocol",
     "sarex",
-    "yandex-mail"
+    "yandex-mail",
+    "kimi",
+    "session-restore"
   ],
   "author": "rukazax",
   "license": "MIT",
