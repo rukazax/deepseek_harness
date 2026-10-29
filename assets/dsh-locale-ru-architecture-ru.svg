@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="330" viewBox="0 0 900 330" role="img" aria-labelledby="title">
+  <title id="title">dsh-locale-ru — как плагин встраивается в DeepSeek Harness</title>
+  <style>
+    .box { fill: #ffffff; stroke: #c9d1d9; stroke-width: 1.5; rx: 10; }
+    .accent { fill: #f3f8ff; stroke: #4B6BFB; stroke-width: 1.8; }
+    .store { fill: #fffdf5; stroke: #d4a72c; stroke-width: 1.5; }
+    .t { font-family: -apple-system, Segoe UI, Roboto, sans-serif; font-size: 14px; fill: #1f2328; }
+    .h { font-family: -apple-system, Segoe UI, Roboto, sans-serif; font-size: 15px; font-weight: 600; fill: #1f2328; }
+    .s { font-family: -apple-system, Segoe UI, Roboto, sans-serif; font-size: 12px; fill: #57606a; }
+    .arrow { stroke: #4B6BFB; stroke-width: 2; fill: none; marker-end: url(#a); }
+    .dash { stroke: #8c959f; stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; marker-end: url(#d); }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4B6BFB"/>
+    </marker>
+    <marker id="d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8c959f"/>
+    </marker>
+  </defs>
+
+  <text class="h" x="24" y="30">dsh-locale-ru · схема работы</text>
+
+  <!-- Web UI -->
+  <rect class="box" x="24" y="60" width="200" height="86"/>
+  <text class="h" x="40" y="88">Веб-интерфейс DSH</text>
+  <text class="s" x="40" y="110">Настройки → Общие → Язык</text>
+  <text class="s" x="40" y="130">пункт «Русский»</text>
+
+  <!-- client-locale -->
+  <rect class="box" x="270" y="60" width="200" height="86"/>
+  <text class="h" x="286" y="88">dsh-client-locale</text>
+  <text class="s" x="286" y="110">ctx.locale.define(...)</text>
+  <text class="s" x="286" y="130">цепочка отката ru → en</text>
+
+  <!-- plugin -->
+  <rect class="accent" x="516" y="46" width="200" height="114"/>
+  <text class="h" x="532" y="74">dsh-locale-ru</text>
+  <text class="s" x="532" y="96">lib/client.js — бандл</text>
+  <text class="s" x="532" y="116">locales/ru.json — 30</text>
+  <text class="s" x="532" y="134">пространств имён</text>
+  <text class="s" x="532" y="152">1620+ строк</text>
+
+  <!-- store -->
+  <rect class="store" x="762" y="60" width="114" height="86"/>
+  <text class="h" x="776" y="88">ru.json</text>
+  <text class="s" x="776" y="110">исходник</text>
+  <text class="s" x="776" y="130">переводов</text>
+
+  <!-- arrows -->
+  <path class="arrow" d="M224,103 H262"/>
+  <path class="arrow" d="M470,103 H508"/>
+  <path class="dash" d="M716,103 H754"/>
+
+  <!-- host half -->
+  <rect class="box" x="270" y="196" width="446" height="76"/>
+  <text class="h" x="286" y="224">lib/index.js — хостовая половина</text>
+  <text class="s" x="286" y="246">export function apply() {}</text>
+  <text class="s" x="286" y="264">нужна только чтобы у пакета была строка в Loader</text>
+
+  <path class="dash" d="M616,196 V168"/>
+
+  <!-- install -->
+  <rect class="box" x="24" y="196" width="200" height="76"/>
+  <text class="h" x="40" y="224">tools/install.mjs</text>
+  <text class="s" x="40" y="246">копирует пакет в профиль</text>
+  <text class="s" x="40" y="264">и добавляет строку Loader</text>
+  <path class="arrow" d="M224,234 H262"/>
+
+  <text class="s" x="24" y="306">Непереведённые ключи остаются английскими: язык объявлен как ru с откатом на en.</text>
+</svg>

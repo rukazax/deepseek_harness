@@ -34,6 +34,7 @@ MCP-протокол и дать агентам единый, предсказу
 | [`dsh-mobile`](packages/dsh-mobile) | Удалённое управление DSH с телефона (Android/раскладной): LAN-шлюз, pairing, SSE, PWA и in-process мост к сессиям; просмотр не тратит токены | Node.js + PWA |
 | [`mcp-cua`](packages/mcp-cua) | Computer use для Windows: окна, UIA-дерево, скриншоты, клики и ввод через Cua Driver 0.28.0 | Node.js (ESM) |
 | [`mcp-kot`](packages/mcp-kot) | Мост к агенту Kot в OpenClaw: один ход агента плюс состояние Gateway, каналов, агентов и сессий | Node.js (ESM) |
+| [`dsh-locale-ru`](packages/dsh-locale-ru) | Русский язык веб-интерфейса: пункт «Русский» в настройках и словари для всех клиентских пакетов, откат `ru → en` | Node.js (ESM), без сборки |
 
 ## Архитектура
 
@@ -119,6 +120,7 @@ predictable access path — no ad-hoc scripts per task.
 | [`dsh-mobile`](packages/dsh-mobile) | Remote control of DSH from a phone (Android/foldable): LAN gateway, pairing, SSE, PWA and an in-process session bridge; viewing costs no tokens | Node.js + PWA |
 | [`mcp-cua`](packages/mcp-cua) | Computer use for Windows: windows, UIA tree, screenshots, clicks and typing through Cua Driver 0.28.0 | Node.js (ESM) |
 | [`mcp-kot`](packages/mcp-kot) | Bridge to the Kot agent in OpenClaw: one agent turn plus Gateway, channel, agent and session state | Node.js (ESM) |
+| [`dsh-locale-ru`](packages/dsh-locale-ru) | Russian language for the web UI: a «Русский» entry in settings plus dictionaries for every client package, `ru → en` fallback | Node.js (ESM), no build step |
 
 ```mermaid
 flowchart LR

@@ -1,0 +1,58 @@
+{
+  "name": "dsh-locale-ru",
+  "version": "1.0.0",
+  "displayName": "Russian language pack",
+  "description": "Russian language pack for the DeepSeek Harness web interface: adds the «Русский» entry under Settings → General → Language and registers Russian dictionaries for all client packages. Fallback chain ru → en keeps untranslated keys in English.",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "locales/ru.json",
+    "tools/install.mjs",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "locale",
+    "russian",
+    "i18n",
+    "translation",
+    "ui"
+  ],
+  "author": "rukazax",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rukazax/deepseek_harness.git",
+    "directory": "packages/dsh-locale-ru"
+  },
+  "homepage": "https://github.com/rukazax/deepseek_harness/tree/main/packages/dsh-locale-ru",
+  "bugs": {
+    "url": "https://github.com/rukazax/deepseek_harness/issues"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-locale"
+      ],
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}

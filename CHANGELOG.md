@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-30 — dsh-locale-ru
+
+RU: новый пакет `dsh-locale-ru` — русский язык веб-интерфейса DSH. Пункт «Русский» в «Настройки → Общие → Язык», 1620+ строк перевода в 30 пространствах имён, откат `ru -> en` для отсутствующих ключей. Хостовая половина пустая (только строка Loader), сборка не нужна, установка офлайн через `tools/install.mjs`. Двуязычный README, страница в `docs/ru` и `docs/en`, схемы `assets/dsh-locale-ru-architecture-{ru,en}.svg` и Mermaid.
+
+EN: new package `dsh-locale-ru` — Russian language for the DSH web UI. A «Русский» entry under Settings -> General -> Language, 1620+ translated lines across 30 namespaces, `ru -> en` fallback for missing keys. The host half is empty (Loader row only), no build step, offline install via `tools/install.mjs`. Bilingual README, pages under `docs/ru` and `docs/en`, diagrams in `assets/dsh-locale-ru-architecture-{ru,en}.svg` plus Mermaid.
+
+
 ## 2026-10-29 — mcp-cua и mcp-kot
 
 RU: два новых пакета. `mcp-cua` даёт агенту DSH computer use на Windows (26 инструментов по умолчанию, 56 с `--all`), `mcp-kot` соединяет чат DSH с агентом Kot в OpenClaw. Двуязычные README, страницы в `docs/ru` и `docs/en`, схемы в `assets`.

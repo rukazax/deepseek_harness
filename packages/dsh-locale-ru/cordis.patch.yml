@@ -1,0 +1,5 @@
+# Mount the Russian language pack.
+# The host half is side-effect free; the browser half registers the language and dictionaries.
+- insert:
+    - id: dsh-locale-ru
+      name: dsh-locale-ru
