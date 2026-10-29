@@ -3,6 +3,21 @@
 All notable changes to this repository are documented here.
 Формат — по [Keep a Changelog](https://keepachangelog.com/), версии — по SemVer.
 
+## [1.3.0] — 2026-10-29
+
+### RU
+
+- **Добавлен** dsh-approval-remember — клиентский плагин DSH: галочка «Запомнить выбор» в строке кнопок
+  окна подтверждения (правее «Отклонить» и «Разрешить один раз»). Запомненный выбор авто-подтверждает
+  одинаковые запросы; хранение — localStorage, управление — window.__dshApprovalRemember.
+- Скриншот панели, двуязычный README (RU/EN), установка/управление/безопасность.
+
+### EN
+
+- **Added** dsh-approval-remember — DSH client plugin: "Remember choice" checkbox in the approval prompt
+  button row (right of "Reject" and "Allow once"). Remembered choices auto-approve identical requests;
+  stored in localStorage and managed via window.__dshApprovalRemember.
+- Panel screenshot, bilingual README (RU/EN), install/management/security notes.
 ## [1.2.0] — 2026-10-29
 
 ### RU
