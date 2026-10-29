@@ -1,0 +1,26 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+
+# Secrets and personal data — never commit
+_secrets/
+*.secret
+*.token
+**/credentials.json
+**/session.json
+**/tokens.json
+**/browser-profile/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Local runtime
+*.log
