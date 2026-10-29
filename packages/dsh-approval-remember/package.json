@@ -1,0 +1,29 @@
+{
+  "name": "dsh-approval-remember",
+  "version": "1.0.0",
+  "displayName": "Approval Remember",
+  "description": "Adds a 'Remember choice' checkbox to the DSH approval prompt and auto-approves identical requests.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": ["lib", "cordis.patch.yml", "README.md", "LICENSE"],
+  "keywords": ["dsh-plugin", "deepseek-harness", "approval", "ui", "remember"],
+  "author": "rukazax",
+  "license": "MIT",
+  "engines": { "node": "^22.19.0 || >=24.0.0" },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  }
+}
