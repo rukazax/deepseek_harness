@@ -132,6 +132,7 @@ flowchart LR
     S2 --> SMTP[SMTP]
 ```
 
+- [mcp-cua: desktop control (EN)](docs/en/mcp-cua.md) · [mcp-kot: OpenClaw bridge (EN)](docs/en/mcp-kot.md)
 ### Quick start
 
 ```bash
