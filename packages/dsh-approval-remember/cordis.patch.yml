@@ -1,0 +1,4 @@
+# Mount the approval-remember client plugin.
+- insert:
+    - id: dsh-approval-remember
+      name: dsh-approval-remember
