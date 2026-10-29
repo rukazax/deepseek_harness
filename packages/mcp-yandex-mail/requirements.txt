@@ -1,0 +1,1 @@
+# Python runtime requirements (standard library only in this version)
