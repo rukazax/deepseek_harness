@@ -3,6 +3,19 @@
 All notable changes to this repository are documented here.
 Формат — по [Keep a Changelog](https://keepachangelog.com/), версии — по SemVer.
 
+## [1.4.0] — 2026-10-29
+
+### RU
+
+- dsh-approval-remember **1.1.0**: галочка «Запомнить выбор» заменена на кнопку **«Разрешать всегда»**.
+  Нажатие разрешает текущий запрос и запоминает правило для этого и подобных сценариев (нормализованный
+  заголовок: пути/URL/числа/кавычки не влияют на совпадение). Обновлены README, скриншот, миграция старых правил.
+
+### EN
+
+- dsh-approval-remember **1.1.0**: the "Remember choice" checkbox is replaced by an **"Always allow"** button.
+  It approves the current request and stores the rule for this and similar scenarios (normalized headline:
+  paths/URLs/numbers/quotes do not affect matching). README, screenshot and legacy-rule migration updated.
 ## [1.3.0] — 2026-10-29
 
 ### RU
