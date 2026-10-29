@@ -22,7 +22,7 @@ $ErrorActionPreference = 'Stop'
 $TaskName = 'Claude Bridge'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $server = Join-Path $here 'claude-bridge.mjs'
-$profilePatch = Join-Path $env:USERPROFILE '.dsh\profiles\desktop\cordis.patch.yml'
+$profilePath = Join-Path $env:USERPROFILE '.dsh\profiles\desktop\cordis.patch.yml'
 
 function Write-Step($text) { Write-Host "==> $text" -ForegroundColor Cyan }
 function Write-Ok($text) { Write-Host "    $text" -ForegroundColor Green }
@@ -86,14 +86,14 @@ if (-not $healthy) { throw "bridge did not answer on port $Port" }
 Write-Ok "bridge is up: loggedIn=$($health.loggedIn), authMethod=$($health.authMethod)"
 
 if ($ProfilePatch) {
-  Write-Step "Patching $profilePatch"
-  if (-not (Test-Path $profilePatch)) { throw "profile patch not found: $profilePatch" }
-  $text = [IO.File]::ReadAllText($profilePatch, [Text.Encoding]::UTF8)
+  Write-Step "Patching $profilePath"
+  if (-not (Test-Path $profilePath)) { throw "profile patch not found: $profilePath" }
+  $text = [IO.File]::ReadAllText($profilePath, [Text.Encoding]::UTF8)
   if ($text -match 'claude-bridge:') {
     Write-Ok 'claude-bridge route already present, nothing to do'
   } else {
-    $backup = "$profilePatch.bak-claude-bridge-$(Get-Date -Format yyyyMMdd-HHmmss)"
-    Copy-Item $profilePatch $backup -Force
+    $backup = "$profilePath.bak-claude-bridge-$(Get-Date -Format yyyyMMdd-HHmmss)"
+    Copy-Item $profilePath $backup -Force
     Write-Ok "backup: $backup"
     $anchor = "      openai-codex: {}`n      kimi-coding: {}"
     if (-not $text.Contains($anchor)) { $anchor = $anchor -replace "`n", "`r`n" }
@@ -114,7 +114,7 @@ if ($ProfilePatch) {
             contextWindow: 200000
 "@
     $text = $text.Replace($anchor, $anchor + ($block -replace "`r`n", "`n"))
-    [IO.File]::WriteAllText($profilePatch, $text, (New-Object Text.UTF8Encoding($false)))
+    [IO.File]::WriteAllText($profilePath, $text, (New-Object Text.UTF8Encoding($false)))
     Write-Ok 'route added to llm-pi-ai providers'
   }
 }
