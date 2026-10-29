@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-30 — документация dsh-approval-remember и dsh-mobile-spike
+
+RU: закрыты пробелы в оформлении. Оба пакета теперь есть в таблицах README (RU и EN), получили двуязычные страницы `docs/ru` и `docs/en` со схемами; для `dsh-mobile-spike` добавлены SVG-схемы жизненного цикла на двух языках. Раньше пакеты существовали в репозитории, но отсутствовали в оглавлении и документации.
+
+EN: documentation gaps closed. Both packages are now listed in the README tables (RU and EN) and have bilingual pages under `docs/ru` and `docs/en` with diagrams; `dsh-mobile-spike` gained lifecycle SVG diagrams in both languages. Previously these packages existed in the repository but were missing from the index and the documentation.
+
+
 ## 2026-10-30 — dsh-locale-ru
 
 RU: новый пакет `dsh-locale-ru` — русский язык веб-интерфейса DSH. Пункт «Русский» в «Настройки → Общие → Язык», 1620+ строк перевода в 30 пространствах имён, откат `ru -> en` для отсутствующих ключей. Хостовая половина пустая (только строка Loader), сборка не нужна, установка офлайн через `tools/install.mjs`. Двуязычный README, страница в `docs/ru` и `docs/en`, схемы `assets/dsh-locale-ru-architecture-{ru,en}.svg` и Mermaid.
