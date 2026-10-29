@@ -5,6 +5,8 @@
  * each MCP tool as a native DSH tool (prefix "<server>__").
  */
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 export const name = "dsh-mcp-client";
 export const inject = [];
@@ -188,6 +190,94 @@ export function apply(ctx, config = {}) {
         logger.error?.(`[mcp:${serverConfig.id}] initialization failed: ${err?.message ?? err}`);
       });
   }
+
+  // DSH-native tool: restore Kimi chats as live sessions in the current workspace.
+  ctx.inject(["sessions", "tools"], (sessionCtx) => {
+    const remove = sessionCtx.tools.register({
+      name: "dsh_restore_kimi_chats",
+      description:
+        "Create native DSH sessions from restored Kimi chats (data file: _kimi/chats/restore-data.json). " +
+        "Sessions are created in the data file's cwd (workspace) and persisted by DSH itself.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          data_path: { type: "string", description: "Optional path to restore-data.json" },
+          cwd: { type: "string", description: "Optional workspace cwd override" },
+        },
+      },
+      output: {
+        schema: { type: "object" },
+        render: (_args, value) => [{ type: "text", text: String(value?.text ?? "") }],
+      },
+      isConcurrencySafe: () => false,
+      execute: async (args) => {
+        const path = args?.data_path ||
+          "C:\\Users\\AMNovez\\Documents\\deepseek-harness\\АМН\\_kimi\\chats\\restore-data.json";
+        const data = JSON.parse(await readFile(path, "utf8"));
+        const cwd = args?.cwd || data.cwd;
+        const created = [];
+        for (const chat of data.chats ?? []) {
+          const sessionId = "session-" + randomUUID();
+          const session = sessionCtx.sessions.create(sessionId, { meta: { cwd } });
+          session.append(
+            "user/message",
+            { role: "user", content: [{ type: "text", text: chat.text }], source: { kind: "user" } },
+            { surfaceOp: "append" },
+          );
+          try {
+            session.append("session/title", {
+              title: chat.title,
+              messageSeqs: [],
+              source: { kind: "user" },
+            });
+          } catch (err) {
+            // title is best-effort; DSH may auto-generate it later
+          }
+          if (sessionCtx.sessions.flush) await sessionCtx.sessions.flush(session);
+          created.push({ title: chat.title, session_id: sessionId, chars: (chat.text ?? "").length });
+        }
+        return { text: JSON.stringify({ cwd, created }, null, 2), created };
+      },
+    });
+    disposers.push(remove);
+  });
+
+  // DSH-native tool: attach cloned sessions to the AMN workspace (validates persistence) and detach stale ids.
+  ctx.inject(["workspaceRegistry", "tools"], (wsCtx) => {
+    const remove = wsCtx.tools.register({
+      name: "dsh_attach_sessions",
+      description:
+        "Attach existing session ids to the AMN workspace via the live workspace registry; optionally detach stale ids.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: { data_path: { type: "string" } },
+      },
+      output: { schema: { type: "object" }, render: (_a, v) => [{ type: "text", text: String(v?.text ?? "") }] },
+      isConcurrencySafe: () => false,
+      execute: async (args) => {
+        const path = args?.data_path ||
+          "C:\\Users\\AMNovez\\Documents\\deepseek-harness\\АМН\\_kimi\\chats\\attach-ids.json";
+        const data = JSON.parse(await readFile(path, "utf8"));
+        const workspaces = wsCtx.workspaceRegistry.list();
+        const ws = workspaces.find((w) => String(w.path).toLowerCase() === String(data.cwd).toLowerCase())
+          || workspaces.find((w) => /АМН$/.test(String(w.path)));
+        if (!ws) throw new Error("workspace not found for cwd: " + data.cwd);
+        const results = [];
+        for (const id of data.cleanup ?? []) {
+          try { await ws.detachSession(id); results.push({ id, action: "detach", ok: true }); }
+          catch (e) { results.push({ id, action: "detach", ok: false, error: String(e?.message ?? e) }); }
+        }
+        for (const s of data.sessions ?? []) {
+          try { await ws.attachSession(s.id); results.push({ id: s.id, title: s.title, action: "attach", ok: true }); }
+          catch (e) { results.push({ id: s.id, title: s.title, action: "attach", ok: false, error: String(e?.message ?? e) }); }
+        }
+        return { text: JSON.stringify(results, null, 2), results };
+      },
+    });
+    disposers.push(remove);
+  });
 
   ctx.effect(() => () => {
     for (const remove of disposers.splice(0)) {
