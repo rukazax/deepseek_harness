@@ -1,0 +1,16 @@
+# Mount the MCP client plugin and configure the MCP servers.
+- insert:
+    - id: dsh-mcp-client
+      name: dsh-mcp-client
+      config:
+        servers:
+          - id: sarex
+            command: 'C:\Users\AMNovez\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
+            args:
+              - 'C:\Users\AMNovez\Documents\deepseek-harness\АМН\_mcp\sarex\server.py'
+            timeoutMs: 120000
+          - id: mail
+            command: 'C:\Users\AMNovez\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
+            args:
+              - 'C:\Users\AMNovez\Documents\deepseek-harness\АМН\_mcp\yandex-mail\server.py'
+            timeoutMs: 180000
