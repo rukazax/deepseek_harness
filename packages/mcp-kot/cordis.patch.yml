@@ -1,0 +1,13 @@
+# Registers the MCP server in a DeepSeek Harness profile.
+# Copy into ~/.dsh/profiles/<profile>/cordis.patch.yml and restart DSH.
+# Tools appear as mcp__kot__*.
+- insert:
+    - id: mcp-kot-bridge
+      name: "@deepseek-ai/dsh-mcp-client"
+      config:
+        serverName: kot
+        transport: stdio
+        command: node
+        args:
+          - /home/<user>/.dsh/bin/kot-mcp/server.mjs
+        toolCallTimeoutMs: 1800000

@@ -1,0 +1,45 @@
+{
+  "name": "mcp-kot",
+  "version": "1.0.0",
+  "description": "MCP bridge from DeepSeek Harness chats to the Kot agent in OpenClaw",
+  "type": "module",
+  "main": "server.mjs",
+  "exports": {
+    ".": "./server.mjs",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "server.mjs",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "mcp",
+    "openclaw",
+    "bridge",
+    "agents",
+    "telegram"
+  ],
+  "author": "rukazax",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rukazax/deepseek_harness.git",
+    "directory": "packages/mcp-kot"
+  },
+  "homepage": "https://github.com/rukazax/deepseek_harness/tree/main/packages/mcp-kot",
+  "bugs": {
+    "url": "https://github.com/rukazax/deepseek_harness/issues"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

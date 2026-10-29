@@ -1,0 +1,13 @@
+# Registers the MCP server in a DeepSeek Harness profile.
+# Copy into ~/.dsh/profiles/<profile>/cordis.patch.yml and restart DSH.
+# Tools appear as mcp__pc__*.
+- insert:
+    - id: mcp-cua-control
+      name: "@deepseek-ai/dsh-mcp-client"
+      config:
+        serverName: pc
+        transport: stdio
+        command: node
+        args:
+          - /home/<user>/.dsh/bin/cua-mcp/server.mjs
+        toolCallTimeoutMs: 180000

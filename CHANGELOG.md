@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-29 — mcp-cua и mcp-kot
+
+RU: два новых пакета. `mcp-cua` даёт агенту DSH computer use на Windows (26 инструментов по умолчанию, 56 с `--all`), `mcp-kot` соединяет чат DSH с агентом Kot в OpenClaw. Двуязычные README, страницы в `docs/ru` и `docs/en`, схемы в `assets`.
+
+EN: two new packages. `mcp-cua` brings computer use to DSH on Windows (26 tools by default, 56 with `--all`), `mcp-kot` links a DSH chat to the Kot agent in OpenClaw. Bilingual READMEs, pages under `docs/ru` and `docs/en`, diagrams in `assets`.
+
+
 All notable changes to this repository are documented here.
 Формат — по [Keep a Changelog](https://keepachangelog.com/), версии — по SemVer.
 
