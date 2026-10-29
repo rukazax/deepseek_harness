@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-30 — claude-bridge: проверка после перезагрузки
+
+RU: `claude-bridge` получил автопроверку `tools/post-restart-check.ps1` и флаг `install.ps1 -WithCheck`. После входа в систему (через 2 и 10 минут) задача проверяет процесс DSH, `/health` моста, состояние задачи «Claude Bridge», маршрут в профиле, разбор YAML через `js-yaml` и делает настоящий запрос через мост. Отчёт пишется в `%USERPROFILE%\.dsh\reports\`, итог виден в `LastTaskResult`, при наличии `CLAUDE_BRIDGE_CHAT_ID` и токена приходит уведомление в Telegram. Попутно исправлено: установщик больше не путает путь профиля с флагом `-ProfilePatch` (в PowerShell регистр не различается), тело тестового запроса отправляется в UTF-8 — иначе кириллица превращалась в «?».
+
+EN: `claude-bridge` gained `tools/post-restart-check.ps1` and the `install.ps1 -WithCheck` flag. After logon (2 and 10 minutes later) the task verifies the DSH process, bridge `/health`, the `Claude Bridge` task state, the route in the profile, YAML parsing through `js-yaml`, and sends a real prompt through the bridge. Reports go to `%USERPROFILE%\.dsh\reports\`, the verdict is surfaced in `LastTaskResult`, and a Telegram note is sent when `CLAUDE_BRIDGE_CHAT_ID` and the token exist. Also fixed: the installer no longer collides the profile path with the `-ProfilePatch` switch (PowerShell is case-insensitive), and the probe body is sent as UTF-8 — Cyrillic used to arrive as question marks.
+
 ## 2026-10-30 — claude-bridge
 
 RU: новый пакет `claude-bridge` — подписка Claude Pro/Max внутри DSH. Локальный эндпоинт в формате Anthropic Messages (`/v1/messages`, обычный ответ и SSE, `/v1/models`, `/health`) выполняет запросы через `claude` CLI, у которого уже есть OAuth подписки. Маршрут регистрируется в `llm-pi-ai` (`api: anthropic-messages`, `baseURL: http://127.0.0.1:8790`), установщик `install.ps1` ставит задачу автозапуска, ждёт `/health` и патчит профиль с резервной копией. Ограничения честно описаны: инструменты DSH через мост недоступны, счётчик токенов нулевой. Двуязычный README, страницы `docs/ru` и `docs/en`, схема `assets/claude-bridge-architecture-{ru,en}.svg`.

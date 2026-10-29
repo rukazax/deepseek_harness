@@ -104,6 +104,29 @@ node .\claude-bridge.mjs --port 8790 --model sonnet
 Инструменты CLI отключены (`--disallowedTools Bash,Edit,Write,Read,…`), чтобы модель
 не пыталась читать файлы. Слушает `127.0.0.1`.
 
+### Проверка после перезагрузки
+
+Мост живёт в задаче планировщика, а провайдер — в профиле DSH, поэтому после
+перезагрузки стоит убедиться, что цепочка цела. Скрипт `tools/post-restart-check.ps1`
+делает это сам: ждёт процесс DSH и `/health`, проверяет задачу и маршрут в профиле,
+при наличии `tools/js-yaml.mjs` разбирает YAML и **отправляет реальный запрос** через
+мост — доказательство, что подписка отвечает.
+
+```powershell
+# разовая проверка
+powershell -ExecutionPolicy Bypass -File .\tools\post-restart-check.ps1
+
+# автопроверка после каждого входа в систему (через 2 и 10 минут)
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -WithCheck
+```
+
+Отчёт: `%USERPROFILE%\.dsh\reports\claude-post-restart-latest.md` (рядом — копии с
+меткой времени). Exit code `0` — всё хорошо, `1` — есть провал; итог виден в
+`LastTaskResult` задачи «Claude Post-Restart Check».
+
+Уведомление в Telegram отправляется, если заданы `CLAUDE_BRIDGE_CHAT_ID` и файл
+`%USERPROFILE%\.openclaw\credentials\telegram-bridge.token`; иначе шаг пропускается.
+
 ### Удаление
 
 ```powershell
@@ -159,6 +182,23 @@ route to the DSH profile (backup first, idempotent).
 - Images and tool calls are not forwarded; `system` and message history are flattened
   into one prompt.
 - Loopback only, no key required.
+
+### Post-restart check
+
+The bridge lives in a scheduled task and the provider lives in the DSH profile, so after
+a reboot it is worth proving the chain survived. `tools/post-restart-check.ps1` waits for
+the DSH process and `/health`, verifies the task and the profile route, parses the YAML
+when `tools/js-yaml.mjs` is present, and **sends a real prompt** through the bridge.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\post-restart-check.ps1   # once
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -WithCheck         # after every logon
+```
+
+Reports land in `%USERPROFILE%\.dsh\reports\claude-post-restart-latest.md`. Exit code 0
+means all checks passed; 1 is surfaced through the task's `LastTaskResult`. A Telegram
+note is sent when `CLAUDE_BRIDGE_CHAT_ID` and
+`%USERPROFILE%\.openclaw\credentials\telegram-bridge.token` are available.
 
 ## License
 

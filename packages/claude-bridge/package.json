@@ -11,6 +11,7 @@
     "claude-bridge.mjs",
     "cordis.patch.yml",
     "install.ps1",
+    "tools/post-restart-check.ps1",
     "README.md"
   ],
   "keywords": [

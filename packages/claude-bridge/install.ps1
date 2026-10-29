@@ -15,6 +15,7 @@ param(
   [int]$Port = 8790,
   [switch]$ProfilePatch,
   [switch]$SkipTask,
+  [switch]$WithCheck,
   [switch]$Uninstall
 )
 
@@ -30,6 +31,10 @@ function Write-Warn2($text) { Write-Host "    $text" -ForegroundColor Yellow }
 
 if ($Uninstall) {
   Write-Step "Removing scheduled task '$TaskName'"
+  if (Get-ScheduledTask -TaskName 'Claude Post-Restart Check' -ErrorAction SilentlyContinue) {
+    Unregister-ScheduledTask -TaskName 'Claude Post-Restart Check' -Confirm:$false
+    Write-Ok 'post-restart check task removed'
+  }
   if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
@@ -119,6 +124,25 @@ if ($ProfilePatch) {
   }
 }
 
+if ($WithCheck) {
+  Write-Step "Registering post-restart check"
+  $checkScript = Join-Path $here 'tools\post-restart-check.ps1'
+  if (-not (Test-Path $checkScript)) { Write-Warn2 "missing $checkScript"; }
+  else {
+    $checkAction = New-ScheduledTaskAction -Execute 'powershell.exe' `
+      -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$checkScript`""
+    $checkT1 = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+    $checkT1.Delay = 'PT2M'
+    $checkT2 = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+    $checkT2.Delay = 'PT10M'
+    $checkSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+      -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 30) `
+      -RestartCount 1 -RestartInterval (New-TimeSpan -Minutes 5)
+    Register-ScheduledTask -TaskName 'Claude Post-Restart Check' -Action $checkAction `
+      -Trigger @($checkT1, $checkT2) -Settings $checkSettings -Force | Out-Null
+    Write-Ok 'task "Claude Post-Restart Check" registered (2 min and 10 min after logon)'
+  }
+}
 Write-Step 'Next steps'
 Write-Host "    1. Restart DeepSeek Harness so the profile is re-read." -ForegroundColor Gray
 Write-Host "    2. Settings -> Models -> 'Claude (subscription)' -> Claude Sonnet 5." -ForegroundColor Gray
