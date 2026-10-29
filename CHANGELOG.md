@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-30 — dsh-mobile: статус и сверка с рабочей связкой
+
+RU: проверено, что все ранее созданные плагины опубликованы (9 пакетов); `dsh-locale-ru` 1.0.0 совпадает с установленным. Найдено расхождение по `dsh-mobile`: в репозитории ранний in-house прототип **0.1.0** (LAN-шлюз `:3081`, pairing, SSE, PWA), а в эксплуатации — **одноимённый upstream** [`saya-ch/dsh-mobile`](https://github.com/saya-ch/dsh-mobile) **0.6.16** (Apache-2.0): другой шлюз, FRP-фуннель, Caddy, Android-приложение `io.github.sayach.dshmobile` 0.6.7. Имя пакета совпадает, поэтому `npm i dsh-mobile` притягивает upstream. Добавлены предупреждение в README пакета (RU/EN), страницы `docs/ru/dsh-mobile.md` и `docs/en/dsh-mobile.md`, схемы `assets/dsh-mobile-relationship-{ru,en}.svg`, уточнена строка в корневом README.
+
+EN: verified that every previously created plugin is published (9 packages) and that `dsh-locale-ru` 1.0.0 matches the installed copy. Found a `dsh-mobile` divergence: the repository holds an early in-house prototype **0.1.0** (LAN gateway `:3081`, pairing, SSE, PWA), while production runs the **same-name upstream** [`saya-ch/dsh-mobile`](https://github.com/saya-ch/dsh-mobile) **0.6.16** (Apache-2.0): a different gateway, an FRP funnel, Caddy and the Android app `io.github.sayach.dshmobile` 0.6.7. The name collides, so `npm i dsh-mobile` pulls upstream. Added a warning to the package README (RU/EN), pages `docs/ru/dsh-mobile.md` and `docs/en/dsh-mobile.md`, diagrams `assets/dsh-mobile-relationship-{ru,en}.svg`, and clarified the root README row.
+
 ## 2026-10-30 — документация dsh-approval-remember и dsh-mobile-spike
 
 RU: закрыты пробелы в оформлении. Оба пакета теперь есть в таблицах README (RU и EN), получили двуязычные страницы `docs/ru` и `docs/en` со схемами; для `dsh-mobile-spike` добавлены SVG-схемы жизненного цикла на двух языках. Раньше пакеты существовали в репозитории, но отсутствовали в оглавлении и документации.

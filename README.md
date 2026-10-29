@@ -33,7 +33,7 @@ MCP-протокол и дать агентам единый, предсказу
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | MCP-сервер Яндекс.Почты: статус, папки, быстрый поиск по заголовкам, чтение, вложения, отправка | Python 3.12 |
 | [dsh-approval-remember](packages/dsh-approval-remember) | Кнопка «Разрешать всегда» в окне подтверждения: правило запоминается и применяется к подобным сценариям | DSH client plugin |
 | [dsh-mobile-spike](packages/dsh-mobile-spike) | Минимальный спайк плагина: in-process вход, loopback-маршрут, свой HTTP-листенер и корректный dispose | Node.js |
-| [`dsh-mobile`](packages/dsh-mobile) | Удалённое управление DSH с телефона (Android/раскладной): LAN-шлюз, pairing, SSE, PWA и in-process мост к сессиям; просмотр не тратит токены | Node.js + PWA |
+| [`dsh-mobile`](packages/dsh-mobile) | Удалённое управление DSH с телефона: LAN-шлюз, pairing, SSE, PWA и in-process мост к сессиям; просмотр не тратит токены. **Ранний прототип 0.1.0** — в работе используется одноимённый upstream `saya-ch/dsh-mobile` 0.6.16, см. [docs/ru/dsh-mobile.md](docs/ru/dsh-mobile.md) | Node.js + PWA |
 | [`mcp-cua`](packages/mcp-cua) | Computer use для Windows: окна, UIA-дерево, скриншоты, клики и ввод через Cua Driver 0.28.0 | Node.js (ESM) |
 | [`mcp-kot`](packages/mcp-kot) | Мост к агенту Kot в OpenClaw: один ход агента плюс состояние Gateway, каналов, агентов и сессий | Node.js (ESM) |
 | [`dsh-locale-ru`](packages/dsh-locale-ru) | Русский язык веб-интерфейса: пункт «Русский» в настройках и словари для всех клиентских пакетов, откат `ru → en` | Node.js (ESM), без сборки |
@@ -85,6 +85,7 @@ python packages/mcp-yandex-mail/server.py      # Яндекс.Почта MCP (st
 - [Глобальное правило публикации](docs/ru/global-rule.md) · [Global rule (EN)](docs/en/global-rule.md)
 - [mcp-cua: управление рабочим столом](docs/ru/mcp-cua.md) · [mcp-kot: мост к OpenClaw](docs/ru/mcp-kot.md)
 - [dsh-approval-remember: «Разрешать всегда»](docs/ru/dsh-approval-remember.md) · [dsh-mobile-spike: контракт плагина](docs/ru/dsh-mobile-spike.md)
+- [dsh-mobile: что в репозитории и что работает](docs/ru/dsh-mobile.md) · [dsh-mobile (EN)](docs/en/dsh-mobile.md)
 - [Безопасность и секреты](docs/ru/security.md) · [Security (EN)](docs/en/security.md)
 
 ## Правила
@@ -122,7 +123,7 @@ predictable access path — no ad-hoc scripts per task.
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | Yandex Mail MCP server: status, folders, fast header search, read, attachments, send | Python 3.12 |
 | [`dsh-approval-remember`](packages/dsh-approval-remember) | «Always allow» button in the approval panel: the rule is remembered and reused for similar scenarios | DSH client plugin |
 | [`dsh-mobile-spike`](packages/dsh-mobile-spike) | Minimal plugin spike: in-process entry, loopback route, own HTTP listener and a clean dispose | Node.js |
-| [`dsh-mobile`](packages/dsh-mobile) | Remote control of DSH from a phone (Android/foldable): LAN gateway, pairing, SSE, PWA and an in-process session bridge; viewing costs no tokens | Node.js + PWA |
+| [`dsh-mobile`](packages/dsh-mobile) | Remote control of DSH from a phone: LAN gateway, pairing, SSE, PWA and an in-process session bridge; viewing costs no tokens. **Early prototype 0.1.0** — production uses the same-name upstream `saya-ch/dsh-mobile` 0.6.16, see [docs/en/dsh-mobile.md](docs/en/dsh-mobile.md) | Node.js + PWA |
 | [`mcp-cua`](packages/mcp-cua) | Computer use for Windows: windows, UIA tree, screenshots, clicks and typing through Cua Driver 0.28.0 | Node.js (ESM) |
 | [`mcp-kot`](packages/mcp-kot) | Bridge to the Kot agent in OpenClaw: one agent turn plus Gateway, channel, agent and session state | Node.js (ESM) |
 | [`dsh-locale-ru`](packages/dsh-locale-ru) | Russian language for the web UI: a «Русский» entry in settings plus dictionaries for every client package, `ru → en` fallback | Node.js (ESM), no build step |
@@ -143,6 +144,7 @@ flowchart LR
 
 - [mcp-cua: desktop control](docs/en/mcp-cua.md) · [mcp-kot: OpenClaw bridge](docs/en/mcp-kot.md)
 - [dsh-approval-remember: Always allow](docs/en/dsh-approval-remember.md) · [dsh-mobile-spike: plugin contract](docs/en/dsh-mobile-spike.md)
+- [dsh-mobile: repo vs running setup](docs/en/dsh-mobile.md) · [dsh-mobile (RU)](docs/ru/dsh-mobile.md)
 
 ### Quick start
 

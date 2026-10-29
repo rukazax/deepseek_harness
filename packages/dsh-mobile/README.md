@@ -6,6 +6,11 @@
 
 **RU** · [English](#english)
 
+> **Статус: ранний прототип, в эксплуатации не стоит.** Это `dsh-mobile` **0.1.0** из этого репозитория.
+> В работе используется одноимённый upstream-пакет [`saya-ch/dsh-mobile`](https://github.com/saya-ch/dsh-mobile)
+> **0.6.16** (Apache-2.0): другой шлюз, FRP-фуннель, Caddy и Android-приложение. Имя пакета совпадает,
+> поэтому **не ставьте по имени** — `npm i dsh-mobile` притянет upstream. Схема — [docs/ru/dsh-mobile.md](../../docs/ru/dsh-mobile.md).
+
 ## RU
 
 Плагин DeepSeek Harness, превращающий телефон (Android/раскладной) в пульт управления живыми
@@ -105,6 +110,11 @@ MIT.
 ---
 
 ## English
+
+> **Status: an early prototype, not deployed.** This is `dsh-mobile` **0.1.0** from this repository.
+> Production uses the same-name upstream [`saya-ch/dsh-mobile`](https://github.com/saya-ch/dsh-mobile)
+> **0.6.16** (Apache-2.0). The name collides, so **do not install by name** — `npm i dsh-mobile` pulls
+> upstream. Diagram: [docs/en/dsh-mobile.md](../../docs/en/dsh-mobile.md).
 
 A DeepSeek Harness plugin that turns a phone (Android/foldable) into a remote control for live agent
 sessions: session list, history, prompts, stop, approvals — over its own LAN gateway with pairing codes.
