@@ -956,6 +956,9 @@ function closePendingSheets() {
 function showApprovalSheet() {
   const approval = chat.pendingApproval;
   if (!approval || !chat.sessionId) return;
+  // The sheet also opens automatically when a pending approval arrives; a click
+  // on the header button must not stack a second copy on top of it.
+  if (chat.approvalOpen) return;
   chat.approvalOpen = true;
   const remember = h('input', { type: 'checkbox', id: 'approval-remember' });
   const body = h(
@@ -1014,6 +1017,7 @@ function showApprovalSheet() {
 function showQuestionSheet() {
   const question = chat.pendingQuestion;
   if (!question || !chat.sessionId) return;
+  if (chat.questionOpen) return;
   chat.questionOpen = true;
   const options = Array.isArray(question.options) ? question.options : [];
   const body = h('div');

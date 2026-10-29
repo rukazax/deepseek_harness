@@ -31,6 +31,7 @@ MCP-протокол и дать агентам единый, предсказу
 | [`dsh-mcp-client`](packages/dsh-mcp-client) | MCP-клиент для DSH: запускает MCP-серверы и регистрирует их инструменты как родные инструменты DSH | Node.js (ESM) |
 | [`mcp-sarex`](packages/mcp-sarex) | MCP-сервер Sarex: Keycloak-авторизация, уведомления, произвольные запросы к API, интерактивный вход с 2FA | Python 3.12 |
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | MCP-сервер Яндекс.Почты: статус, папки, быстрый поиск по заголовкам, чтение, вложения, отправка | Python 3.12 |
+| [`dsh-mobile`](packages/dsh-mobile) | Удалённое управление DSH с телефона (Android/раскладной): LAN-шлюз, pairing, SSE, PWA и in-process мост к сессиям; просмотр не тратит токены | Node.js + PWA |
 
 ## Архитектура
 
@@ -112,6 +113,7 @@ predictable access path — no ad-hoc scripts per task.
 | [`dsh-mcp-client`](packages/dsh-mcp-client) | MCP client for DSH: spawns MCP servers and registers their tools as native DSH tools | Node.js (ESM) |
 | [`mcp-sarex`](packages/mcp-sarex) | Sarex MCP server: Keycloak auth, notifications, generic API requests, interactive 2FA login | Python 3.12 |
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | Yandex Mail MCP server: status, folders, fast header search, read, attachments, send | Python 3.12 |
+| [`dsh-mobile`](packages/dsh-mobile) | Remote control of DSH from a phone (Android/foldable): LAN gateway, pairing, SSE, PWA and an in-process session bridge; viewing costs no tokens | Node.js + PWA |
 
 ```mermaid
 flowchart LR

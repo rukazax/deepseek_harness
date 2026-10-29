@@ -3,6 +3,24 @@
 All notable changes to this repository are documented here.
 Формат — по [Keep a Changelog](https://keepachangelog.com/), версии — по SemVer.
 
+## [1.4.1] — 2026-10-29
+
+### RU
+
+- dsh-mobile: исправлен дубликат нижней панели вопроса/подтверждения — повторный клик
+  по кнопке статуса больше не открывает вторую панель.
+- README: добавлен раздел о полном проекте (отдельный репозиторий `rukazax/dsh-mobile`:
+  PWA, Android-обёртка, PDF-инструкция, отчёты о проверках).
+- Состав репозитория: в таблицу пакетов добавлен dsh-mobile.
+
+### EN
+
+- dsh-mobile: fixed a duplicated approval/question bottom sheet — a second click on the
+  status button no longer stacks another sheet.
+- README: added a section about the complete project (separate `rukazax/dsh-mobile`
+  repository: PWA, Android wrapper, PDF manual, verification reports).
+- Repository index: added dsh-mobile to the package table.
+
 ## [1.4.0] — 2026-10-29
 
 ### RU

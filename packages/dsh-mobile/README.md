@@ -176,3 +176,13 @@ See the YAML above; all fields are optional.
 ### License
 
 MIT.
+
+### Полный проект / Full project
+
+Клиент целиком — плагин, PWA, Android-обёртка, PDF-инструкция и отчёты о проверках —
+развивается в отдельном репозитории `rukazax/dsh-mobile` (private). Этот репозиторий
+публикует только пакет плагина.
+
+The complete client — plugin, PWA, Android wrapper, PDF manual and verification reports —
+lives in the separate `rukazax/dsh-mobile` repository (private). This repository publishes
+only the plugin package.
