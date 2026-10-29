@@ -31,6 +31,8 @@ MCP-протокол и дать агентам единый, предсказу
 | [`dsh-mcp-client`](packages/dsh-mcp-client) | MCP-клиент для DSH: запускает MCP-серверы и регистрирует их инструменты как родные инструменты DSH | Node.js (ESM) |
 | [`mcp-sarex`](packages/mcp-sarex) | MCP-сервер Sarex: Keycloak-авторизация, уведомления, произвольные запросы к API, интерактивный вход с 2FA | Python 3.12 |
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | MCP-сервер Яндекс.Почты: статус, папки, быстрый поиск по заголовкам, чтение, вложения, отправка | Python 3.12 |
+| [dsh-approval-remember](packages/dsh-approval-remember) | Кнопка «Разрешать всегда» в окне подтверждения: правило запоминается и применяется к подобным сценариям | DSH client plugin |
+| [dsh-mobile-spike](packages/dsh-mobile-spike) | Минимальный спайк плагина: in-process вход, loopback-маршрут, свой HTTP-листенер и корректный dispose | Node.js |
 | [`dsh-mobile`](packages/dsh-mobile) | Удалённое управление DSH с телефона (Android/раскладной): LAN-шлюз, pairing, SSE, PWA и in-process мост к сессиям; просмотр не тратит токены | Node.js + PWA |
 | [`mcp-cua`](packages/mcp-cua) | Computer use для Windows: окна, UIA-дерево, скриншоты, клики и ввод через Cua Driver 0.28.0 | Node.js (ESM) |
 | [`mcp-kot`](packages/mcp-kot) | Мост к агенту Kot в OpenClaw: один ход агента плюс состояние Gateway, каналов, агентов и сессий | Node.js (ESM) |
@@ -82,6 +84,7 @@ python packages/mcp-yandex-mail/server.py      # Яндекс.Почта MCP (st
 - [Правила разработки и публикации](CONTRIBUTING.md) — двуязычные
 - [Глобальное правило публикации](docs/ru/global-rule.md) · [Global rule (EN)](docs/en/global-rule.md)
 - [mcp-cua: управление рабочим столом](docs/ru/mcp-cua.md) · [mcp-kot: мост к OpenClaw](docs/ru/mcp-kot.md)
+- [dsh-approval-remember: «Разрешать всегда»](docs/ru/dsh-approval-remember.md) · [dsh-mobile-spike: контракт плагина](docs/ru/dsh-mobile-spike.md)
 - [Безопасность и секреты](docs/ru/security.md) · [Security (EN)](docs/en/security.md)
 
 ## Правила
@@ -117,6 +120,8 @@ predictable access path — no ad-hoc scripts per task.
 | [`dsh-mcp-client`](packages/dsh-mcp-client) | MCP client for DSH: spawns MCP servers and registers their tools as native DSH tools | Node.js (ESM) |
 | [`mcp-sarex`](packages/mcp-sarex) | Sarex MCP server: Keycloak auth, notifications, generic API requests, interactive 2FA login | Python 3.12 |
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | Yandex Mail MCP server: status, folders, fast header search, read, attachments, send | Python 3.12 |
+| [`dsh-approval-remember`](packages/dsh-approval-remember) | «Always allow» button in the approval panel: the rule is remembered and reused for similar scenarios | DSH client plugin |
+| [`dsh-mobile-spike`](packages/dsh-mobile-spike) | Minimal plugin spike: in-process entry, loopback route, own HTTP listener and a clean dispose | Node.js |
 | [`dsh-mobile`](packages/dsh-mobile) | Remote control of DSH from a phone (Android/foldable): LAN gateway, pairing, SSE, PWA and an in-process session bridge; viewing costs no tokens | Node.js + PWA |
 | [`mcp-cua`](packages/mcp-cua) | Computer use for Windows: windows, UIA tree, screenshots, clicks and typing through Cua Driver 0.28.0 | Node.js (ESM) |
 | [`mcp-kot`](packages/mcp-kot) | Bridge to the Kot agent in OpenClaw: one agent turn plus Gateway, channel, agent and session state | Node.js (ESM) |
@@ -137,6 +142,7 @@ flowchart LR
 ### Diagrams and documentation
 
 - [mcp-cua: desktop control](docs/en/mcp-cua.md) · [mcp-kot: OpenClaw bridge](docs/en/mcp-kot.md)
+- [dsh-approval-remember: Always allow](docs/en/dsh-approval-remember.md) · [dsh-mobile-spike: plugin contract](docs/en/dsh-mobile-spike.md)
 
 ### Quick start
 
