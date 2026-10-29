@@ -1,0 +1,45 @@
+{
+  "name": "@rukazax/claude-bridge",
+  "version": "0.1.0",
+  "description": "Anthropic-Messages-compatible loopback endpoint that runs DeepSeek Harness (and other harnesses) on a Claude Pro/Max subscription through the local Claude Code CLI",
+  "type": "module",
+  "main": "claude-bridge.mjs",
+  "bin": {
+    "claude-bridge": "claude-bridge.mjs"
+  },
+  "files": [
+    "claude-bridge.mjs",
+    "cordis.patch.yml",
+    "install.ps1",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "claude",
+    "anthropic",
+    "subscription",
+    "claude-code",
+    "proxy",
+    "anthropic-messages"
+  ],
+  "author": "rukazax",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rukazax/deepseek_harness.git",
+    "directory": "packages/claude-bridge"
+  },
+  "homepage": "https://github.com/rukazax/deepseek_harness/tree/main/packages/claude-bridge",
+  "bugs": {
+    "url": "https://github.com/rukazax/deepseek_harness/issues"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+# Registers the claude-bridge route in a DeepSeek Harness profile.
+#
+# The route is served by pi-ai's `anthropic-messages` transport, so the profile
+# needs the `@deepseek-ai/dsh-llm-pi-ai` plugin (shipped with DSH) and the local
+# bridge process running on 127.0.0.1:8790 (see install.ps1).
+#
+# IMPORTANT: `providers` is replaced wholesale by this patch. If your profile
+# already routes other pi-ai providers (openai-codex, kimi-coding, custom
+# gateways), keep their entries below — otherwise those routes disappear.
+- id: llm-pi-ai
+  config:
+    providers:
+      claude-bridge:
+        displayName: Claude (subscription)
+        api: anthropic-messages
+        baseURL: http://127.0.0.1:8790
+        models:
+          - id: claude-sonnet-5
+            name: Claude Sonnet 5 (subscription)
+            contextWindow: 200000
+          - id: claude-opus-5
+            name: Claude Opus 5 (subscription)
+            contextWindow: 200000

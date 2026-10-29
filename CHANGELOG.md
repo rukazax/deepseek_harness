@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-30 — claude-bridge
+
+RU: новый пакет `claude-bridge` — подписка Claude Pro/Max внутри DSH. Локальный эндпоинт в формате Anthropic Messages (`/v1/messages`, обычный ответ и SSE, `/v1/models`, `/health`) выполняет запросы через `claude` CLI, у которого уже есть OAuth подписки. Маршрут регистрируется в `llm-pi-ai` (`api: anthropic-messages`, `baseURL: http://127.0.0.1:8790`), установщик `install.ps1` ставит задачу автозапуска, ждёт `/health` и патчит профиль с резервной копией. Ограничения честно описаны: инструменты DSH через мост недоступны, счётчик токенов нулевой. Двуязычный README, страницы `docs/ru` и `docs/en`, схема `assets/claude-bridge-architecture-{ru,en}.svg`.
+
+EN: new `claude-bridge` package — a Claude Pro/Max subscription inside DSH. A loopback Anthropic Messages endpoint (`/v1/messages` with plain and SSE replies, `/v1/models`, `/health`) executes requests through the `claude` CLI that already holds the subscription OAuth. The route is registered in `llm-pi-ai` (`api: anthropic-messages`, `baseURL: http://127.0.0.1:8790`); `install.ps1` registers the autostart task, waits for `/health` and patches the profile with a backup. Limitations are stated plainly: DSH tools are unavailable through the bridge and token counters read zero. Bilingual README, `docs/ru` and `docs/en` pages, diagram `assets/claude-bridge-architecture-{ru,en}.svg`.
+
+
 ## 2026-10-30 — dsh-sync: синхронизация истории сессий
 
 RU: новый пакет `dsh-sync` — двусторонняя синхронизация истории сессий DSH между Windows-установкой и Linux-инстансом. Переносятся логи сессий и вложения; вызовов моделей нет, токены не тратятся. Ключевая часть — `convert.js`: DSH требует абсолютный `cwd` для своей платформы, поэтому конвертер правит только строку заголовка через карту путей и перепаковывает zstd (первый кадр — заголовок, дальше события без изменений). Оркестратор `sync-dsh-sessions.ps1` считает sha256 обеих сторон, выбирает push/pull, разрешает конфликты по времени с бэкапом, ведёт `state.json` и `sync.log`. Скрипты параметризованы: домашний каталог берётся из `USERPROFILE`, SSH-алиас — из `DSH_SYNC_SSH` (по умолчанию `debian17-root`). Двуязычный README, страницы `docs/ru/dsh-sync.md` и `docs/en/dsh-sync.md`, схемы `assets/dsh-sync-architecture-{ru,en}.svg`, запись в таблице README. Проверено: `node --check`, паритет конвертера с рабочей копией, `-DryRun` проходит.

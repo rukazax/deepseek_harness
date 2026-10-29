@@ -38,6 +38,7 @@ MCP-протокол и дать агентам единый, предсказу
 | [`mcp-kot`](packages/mcp-kot) | Мост к агенту Kot в OpenClaw: один ход агента плюс состояние Gateway, каналов, агентов и сессий | Node.js (ESM) |
 | [`dsh-locale-ru`](packages/dsh-locale-ru) | Русский язык веб-интерфейса: пункт «Русский» в настройках и словари для всех клиентских пакетов, откат `ru → en` | Node.js (ESM), без сборки |
 | [`dsh-sync`](packages/dsh-sync) | Двусторонняя синхронизация истории сессий DSH между Windows-установкой и Linux-инстансом: sha256, конвертация `cwd` в заголовке, push/pull, бэкапы конфликтов. Утилита, а не плагин: `cordis.patch.yml` не требуется | PowerShell 5.1 + Node.js 22 |
+| [`claude-bridge`](packages/claude-bridge) | Подписка Claude Pro/Max внутри DSH: локальный Anthropic-совместимый мост выполняет запросы через `claude` CLI — без API-ключа и оплаты по токенам | Node.js (ESM), без зависимостей |
 
 ## Архитектура
 
@@ -88,6 +89,7 @@ python packages/mcp-yandex-mail/server.py      # Яндекс.Почта MCP (st
 - [dsh-approval-remember: «Разрешать всегда»](docs/ru/dsh-approval-remember.md) · [dsh-mobile-spike: контракт плагина](docs/ru/dsh-mobile-spike.md)
 - [dsh-mobile: что в репозитории и что работает](docs/ru/dsh-mobile.md) · [dsh-mobile (EN)](docs/en/dsh-mobile.md)
 - [dsh-sync: синхронизация истории сессий](docs/ru/dsh-sync.md) · [dsh-sync (EN)](docs/en/dsh-sync.md)
+- [claude-bridge: подписка Claude в DSH](docs/ru/claude-bridge.md)
 - [Безопасность и секреты](docs/ru/security.md) · [Security (EN)](docs/en/security.md)
 
 ## Правила
@@ -130,6 +132,7 @@ predictable access path — no ad-hoc scripts per task.
 | [`mcp-kot`](packages/mcp-kot) | Bridge to the Kot agent in OpenClaw: one agent turn plus Gateway, channel, agent and session state | Node.js (ESM) |
 | [`dsh-locale-ru`](packages/dsh-locale-ru) | Russian language for the web UI: a «Русский» entry in settings plus dictionaries for every client package, `ru → en` fallback | Node.js (ESM), no build step |
 | [`dsh-sync`](packages/dsh-sync) | Two-way sync of DSH session history between a Windows install and a Linux instance: sha256, header `cwd` conversion, push/pull, conflict backups. A utility, not a plugin: no `cordis.patch.yml` needed | PowerShell 5.1 + Node.js 22 |
+| [`claude-bridge`](packages/claude-bridge) | A Claude Pro/Max subscription inside DSH: a loopback Anthropic-compatible bridge executes requests through the `claude` CLI — no API key, no token billing | Node.js (ESM), no dependencies |
 
 ```mermaid
 flowchart LR
@@ -149,6 +152,7 @@ flowchart LR
 - [dsh-approval-remember: Always allow](docs/en/dsh-approval-remember.md) · [dsh-mobile-spike: plugin contract](docs/en/dsh-mobile-spike.md)
 - [dsh-mobile: repo vs running setup](docs/en/dsh-mobile.md) · [dsh-mobile (RU)](docs/ru/dsh-mobile.md)
 - [dsh-sync: session history sync](docs/en/dsh-sync.md) · [dsh-sync (RU)](docs/ru/dsh-sync.md)
+- [claude-bridge: a Claude subscription in DSH](docs/en/claude-bridge.md)
 
 ### Quick start
 
