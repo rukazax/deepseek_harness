@@ -1,0 +1,3 @@
+# Python runtime requirements
+# mcp-sarex: standard library only. Optional interactive SSO:
+playwright>=1.40.0  # optional: py -m pip install playwright
