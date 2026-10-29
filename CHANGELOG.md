@@ -3,6 +3,25 @@
 All notable changes to this repository are documented here.
 Формат — по [Keep a Changelog](https://keepachangelog.com/), версии — по SemVer.
 
+## [1.2.0] — 2026-10-29
+
+### RU
+
+- **Добавлен** dsh-mobile — удалённое управление DSH с телефона: LAN-шлюз :3081, pairing-коды и device-токены,
+  SSE-поток событий, промпты/остановка/approvals, PWA без сборки (раскладные экраны), in-process мост к сессиям.
+  Просмотр сессий с телефона не расходует токены.
+- **Добавлен** dsh-mobile-spike — минимальный спайк DSH-плагина: loopback-маршрут, собственный HTTP-листенер,
+  корректный dispose; пример структуры плагина.
+- Двуязычные README (RU/EN), схемы архитектуры, скриншоты PWA, изображения в ssets/.
+
+### EN
+
+- **Added** dsh-mobile — remote control of DSH from a phone: LAN gateway :3081, pairing codes and device tokens,
+  SSE event stream, prompts/stop/approvals, build-free PWA (foldables), in-process session bridge.
+  Viewing sessions from the phone costs no tokens.
+- **Added** dsh-mobile-spike — a minimal DSH plugin spike: loopback route, own HTTP listener, clean dispose;
+  a plugin-structure example.
+- Bilingual README (RU/EN), architecture diagrams, PWA screenshots, images in ssets/.
 ## [1.1.0] — 2026-10-29
 
 ### RU
