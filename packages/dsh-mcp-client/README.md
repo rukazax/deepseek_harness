@@ -105,3 +105,27 @@ node test-harness.mjs
 ### License
 
 MIT
+
+## DSH utility tools / Инструменты DSH
+
+Помимо MCP-инструментов, плагин регистрирует служебные инструменты DSH:
+
+| Инструмент | Назначение |
+|---|---|
+| dsh_restore_kimi_chats | Создаёт нативные DSH-сессии из восстановленных чатов Kimi (_kimi/chats/restore-data.json) через ctx.sessions.create |
+| dsh_attach_sessions | Привязывает готовые сессии к workspace через живой workspaceRegistry (валидирует хранилище) и отцепляет устаревшие |
+
+Восстановление сессий: сначала создаются валидные логи (клонирование эталонной сессии с checksum-кадрами),
+затем dsh_attach_sessions добавляет их в реестр рабочей папки. Такой порядок проходит штатную проверку DSH.
+
+### EN
+
+Besides MCP tools, the plugin registers DSH utility tools:
+
+| Tool | Purpose |
+|---|---|
+| dsh_restore_kimi_chats | Creates native DSH sessions from restored Kimi chats (_kimi/chats/restore-data.json) via ctx.sessions.create |
+| dsh_attach_sessions | Attaches prepared sessions to a workspace through the live workspaceRegistry (validates persistence) and detaches stale ids |
+
+Restore flow: create valid session logs first (clone a reference session with checksummed frames), then attach them
+with dsh_attach_sessions, which passes native DSH validation.
