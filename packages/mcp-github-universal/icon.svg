@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- mcp-github-universal: cloud (remote GitHub MCP) + local repository -->
+  <circle cx="44" cy="26" r="16" fill="#24292f"/>
+  <circle cx="44" cy="26" r="7" fill="#fafbfc"/>
+  <rect x="6" y="34" width="26" height="20" rx="5" fill="#0969da"/>
+  <path d="M14 44v8M14 44a4 4 0 1 1 4-4" stroke="#fafbfc" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="14" cy="52" r="3" fill="#fafbfc"/>
+  <circle cx="24" cy="40" r="3" fill="#fafbfc"/>
+</svg>

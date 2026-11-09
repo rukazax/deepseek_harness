@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "GitHub MCP (universal)",
+    "description": "Универсальный доступ к GitHub по MCP: официальный удалённый GitHub MCP Server (репозитории, issues, pull request'ы, Actions, code security) плюс локальный Git-сервер для операций с репозиториями."
+  }
+}

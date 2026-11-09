@@ -1,0 +1,32 @@
+# Универсальный доступ к GitHub по MCP: официальный удалённый GitHub MCP Server
+# (все toolsets) + локальный Git MCP Server из venv в $DSH_HOME/venvs.
+# Секреты не хранятся в пакете: токен берётся из переменной окружения.
+- insert:
+    # Облачный GitHub: репозитории, файлы, issues, PR, Actions, code security, gists...
+    - id: mcp-github
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: github
+        transport: streamable-http
+        url: https://api.githubcopilot.com/mcp/x/all
+        toolCallTimeoutMs: 120000
+        headers:
+          Authorization: !!js "process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? 'Bearer ' + process.env.GITHUB_PERSONAL_ACCESS_TOKEN : ''"
+        failOnStartupError: false
+        reconnect:
+          enabled: true
+          initialDelayMs: 500
+          maxDelayMs: 30000
+          maxAttempts: 10
+
+    # Локальный git: status, diff, add, commit, ветки, merge, log в репозиториях компьютера.
+    # Windows держит интерпретатор venv в Scripts/, Linux — в bin/.
+    - id: mcp-git-local
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: git
+        transport: stdio
+        command: !!js dshHomePath('venvs/mcp-git/Scripts/python.exe')
+        args: ['-m', 'mcp_server_git']
+        toolCallTimeoutMs: 120000
+        failOnStartupError: true
