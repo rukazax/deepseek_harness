@@ -101,6 +101,8 @@ function wordsOf(text) {
 /** Routine template: collapse digits/paths/URLs/quotes, lowercase, keep order. */
 function templateKey(text) {
 	const t = String(text)
+		.replace(/<\w+\b[^>]*>[\w\W]*?<\/\w+>/g, " ")
+		.replace(/</g, " ")
 		.toLowerCase()
 		.replace(/https?:\/\/\S+/g, " url ")
 		.replace(/[A-Za-z]:[\\/][^\s"'`]+/g, " path ")
@@ -642,7 +644,7 @@ function apply(ctx, rawConfig) {
 			for (const row of store.templatesEligible(2)) {
 				const id = sha256(row.key).slice(0, 12);
 				const existing = store.routineById(id);
-				const safeName = clip(row.last_sample || row.key, 60).replace(/[\\/:*?"<>|#\[\]{}]/g, "").trim() || id;
+				const safeName = clip(String(row.last_sample || row.key).replace(/<\w+\b[^>]*>/g, " "), 60).replace(/[\\/:*?"<>|#\[\]{}]/g, "").trim() || id;
 				store.routineUpsert(id, safeName, clip(row.last_sample, 200), row.count, existing?.status ?? "auto", row.last_solution ?? existing?.solution ?? null, now);
 				if (config.vaultSync) {
 					vaultWrite(config.vaultPath, "Routines", safeName, [
@@ -802,7 +804,7 @@ function apply(ctx, rawConfig) {
 					}
 					if (parts.length === 0) return "";
 					stats.injections += 1;
-					const block = `Общая память (все чаты и workspace; segurança подробнее — tool memory_search):\n${parts.join("\n\n")}`;
+					const block = `Общая память (все чаты и workspace; подробности — tool memory_search):\n${parts.join("\n\n")}`;
 					stats.injectedChars += block.length;
 					store.metaPut("injections", String(stats.injections));
 					store.metaPut("injectedChars", String(stats.injectedChars));
