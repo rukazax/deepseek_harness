@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-09 — mcp-github-universal: универсальный доступ к GitHub по MCP
+
+RU: новый пакет `mcp-github-universal` — один бандл подключает к DSH два MCP-сервера и делает GitHub доступным «под ключ». Облачная часть — официальный удалённый GitHub MCP Server (`api.githubcopilot.com/mcp/x/all`, все toolsets; `Authorization` собирается из `GITHUB_PERSONAL_ACCESS_TOKEN` через `!!js`, токен в пакете не хранится); локальная — `mcp-server-git` в venv `~/.dsh/venvs/mcp-git` (путь python разрешается через `dshHomePath`). Поведение деликатное: `failOnStartupError` — false у github-части (без токена DSH стартует, инструменты появятся позже), true у git-сервера; reconnect 0,5 с → 30 с, до 10 попыток; таймаут вызовов — 120 с. Проверено: `mcp__github__get_me` возвращает аккаунт владельца токена, инструменты `mcp__git__*` регистрируются и отвечают. Двуязычный README пакета, страницы `docs/ru` и `docs/en`, схемы `assets/mcp-github-universal-architecture-{ru,en}.svg`, строки в таблицах корневого README и новые ветки в обеих Mermaid-схемах. По пути задокументировали ловушку fine-grained PAT: запись в репозиторий открывается только через *Repository permissions → Contents → Read and write* (правка сохраняется кнопкой *Update token*, строку токена перевыпускать не нужно). Глобальное правило публикации расширено: теперь оно покрывает настройки и правила — включая созданные ранее, которые дополняются в репозитории (backfill).
+
+EN: new `mcp-github-universal` package — one bundle wires two MCP servers to DSH and makes GitHub available out of the box. The cloud part is the official remote GitHub MCP Server (`api.githubcopilot.com/mcp/x/all`, all toolsets; the `Authorization` header is assembled from `GITHUB_PERSONAL_ACCESS_TOKEN` via `!!js`, the token never sits in the package); the local part is `mcp-server-git` in the `~/.dsh/venvs/mcp-git` venv (the python path resolves through `dshHomePath`). Behaviour stays polite: `failOnStartupError` — false on the GitHub part (without a token DSH still boots and the tools appear later), true on the git server; reconnect 0.5 s → 30 s, up to 10 attempts; tool-call timeout 120 s. Verified: `mcp__github__get_me` returns the token owner's account, the `mcp__git__*` tools register and answer. Bilingual package README, `docs/ru` and `docs/en` pages, diagrams `assets/mcp-github-universal-architecture-{ru,en}.svg`, rows in the root README tables and new branches in both Mermaid charts. Along the way we documented the fine-grained PAT pitfall: repository write access only opens via *Repository permissions → Contents → Read and write* (persisted with the *Update token* button). The global publishing rule is extended accordingly: it now covers settings and rules — including previously created ones, which are backfilled into the repository.
+
 ## 2026-10-30 — claude-bridge: проверка после перезагрузки
 
 RU: `claude-bridge` получил автопроверку `tools/post-restart-check.ps1` и флаг `install.ps1 -WithCheck`. После входа в систему (через 2 и 10 минут) задача проверяет процесс DSH, `/health` моста, состояние задачи «Claude Bridge», маршрут в профиле, разбор YAML через `js-yaml` и делает настоящий запрос через мост. Отчёт пишется в `%USERPROFILE%\.dsh\reports\`, итог виден в `LastTaskResult`, при наличии `CLAUDE_BRIDGE_CHAT_ID` и токена приходит уведомление в Telegram. Попутно исправлено: установщик больше не путает путь профиля с флагом `-ProfilePatch` (в PowerShell регистр не различается), тело тестового запроса отправляется в UTF-8 — иначе кириллица превращалась в «?».
@@ -76,6 +82,7 @@ All notable changes to this repository are documented here.
 - dsh-approval-remember **1.1.0**: the "Remember choice" checkbox is replaced by an **"Always allow"** button.
   It approves the current request and stores the rule for this and similar scenarios (normalized headline:
   paths/URLs/numbers/quotes do not affect matching). README, screenshot and legacy-rule migration updated.
+
 ## [1.3.0] — 2026-10-29
 
 ### RU
@@ -91,6 +98,7 @@ All notable changes to this repository are documented here.
   button row (right of "Reject" and "Allow once"). Remembered choices auto-approve identical requests;
   stored in localStorage and managed via window.__dshApprovalRemember.
 - Panel screenshot, bilingual README (RU/EN), install/management/security notes.
+
 ## [1.2.0] — 2026-10-29
 
 ### RU
@@ -110,6 +118,7 @@ All notable changes to this repository are documented here.
 - **Added** dsh-mobile-spike — a minimal DSH plugin spike: loopback route, own HTTP listener, clean dispose;
   a plugin-structure example.
 - Bilingual README (RU/EN), architecture diagrams, PWA screenshots, images in `assets/`.
+
 ## [1.1.0] — 2026-10-29
 
 ### RU
