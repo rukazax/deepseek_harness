@@ -21,7 +21,7 @@
 Репозиторий плагинов и MCP-серверов для **DeepSeek Harness (DSH)**. Каждый пакет оформлен по правилам DSH:
 `package.json` с секцией `dsh.bundle`, `cordis.patch.yml`, документация, тестовый стенд, лицензия.
 
-Комплект решает прикладную задачу: подключить к DSH внешние системы (Sarex, Яндекс.Почта) через
+Комплект решает прикладную задачу: подключить к DSH внешние системы (Sarex, Яндекс.Почта, GitHub) через
 MCP-протокол и дать агентам единый, предсказуемый доступ к ним — без ручных скриптов на каждый случай.
 
 ## Состав
@@ -31,6 +31,7 @@ MCP-протокол и дать агентам единый, предсказу
 | [`dsh-mcp-client`](packages/dsh-mcp-client) | MCP-клиент для DSH: запускает MCP-серверы и регистрирует их инструменты как родные инструменты DSH | Node.js (ESM) |
 | [`mcp-sarex`](packages/mcp-sarex) | MCP-сервер Sarex: Keycloak-авторизация, уведомления, произвольные запросы к API, интерактивный вход с 2FA | Python 3.12 |
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | MCP-сервер Яндекс.Почты: статус, папки, быстрый поиск по заголовкам, чтение, вложения, отправка | Python 3.12 |
+| [`mcp-github-universal`](packages/mcp-github-universal) | Универсальный доступ к GitHub по MCP: официальный удалённый сервер GitHub (репозитории, issues, PR, Actions, code security) + локальный Git-сервер | Удалённый MCP + Python 3.12 (venv) |
 | [dsh-approval-remember](packages/dsh-approval-remember) | Кнопка «Разрешать всегда» в окне подтверждения: правило запоминается и применяется к подобным сценариям | DSH client plugin |
 | [dsh-mobile-spike](packages/dsh-mobile-spike) | Минимальный спайк плагина: in-process вход, loopback-маршрут, свой HTTP-листенер и корректный dispose | Node.js |
 | [`dsh-mobile`](packages/dsh-mobile) | Удалённое управление DSH с телефона: LAN-шлюз, pairing, SSE, PWA и in-process мост к сессиям; просмотр не тратит токены. **Ранний прототип 0.1.0** — в работе используется одноимённый upstream `saya-ch/dsh-mobile` 0.6.16, см. [docs/ru/dsh-mobile.md](docs/ru/dsh-mobile.md) | Node.js + PWA |
@@ -52,10 +53,13 @@ flowchart LR
     DSH --> P[dsh-mcp-client]
     P -->|stdio JSON-RPC| S1[mcp-sarex]
     P -->|stdio JSON-RPC| S2[mcp-yandex-mail]
+    P -->|streamable-http + PAT| S3[mcp-github-universal]
     S1 --> KC[Keycloak SSO<br/>realm sarex]
     S1 --> API[Sarex API]
     S2 --> IMAP[IMAP imap.yandex.ru]
     S2 --> SMTP[SMTP smtp.yandex.ru]
+    S3 --> GH[GitHub API: repos · issues · PR · Actions]
+    S3 --> LG[Локальный git: commit · diff · ветки]
 ```
 
 ## Быстрый старт
@@ -69,7 +73,7 @@ cp -r packages/dsh-mcp-client ~/.dsh/profiles/desktop/node_modules/dsh-mcp-clien
 # 2) добавить в профиль: package.json → dsh.profile.bundles, затем перезапустить DSH
 ```
 
-В DSH появятся инструменты с префиксами `sarex__*` и `mail__*`.
+В DSH появятся инструменты с префиксами `sarex__*`, `mail__*`, `github__*` и `git__*`.
 
 ### 2. MCP-серверы (отдельно от DSH)
 
@@ -85,6 +89,7 @@ python packages/mcp-yandex-mail/server.py      # Яндекс.Почта MCP (st
 - [Архитектура и схемы](docs/ru/architecture.md) · [Architecture (EN)](docs/en/architecture.md)
 - [Правила разработки и публикации](CONTRIBUTING.md) — двуязычные
 - [Глобальное правило публикации](docs/ru/global-rule.md) · [Global rule (EN)](docs/en/global-rule.md)
+- [mcp-github-universal: GitHub по MCP](docs/ru/mcp-github-universal.md) · [mcp-github-universal (EN)](docs/en/mcp-github-universal.md)
 - [mcp-cua: управление рабочим столом](docs/ru/mcp-cua.md) · [mcp-kot: мост к OpenClaw](docs/ru/mcp-kot.md)
 - [dsh-approval-remember: «Разрешать всегда»](docs/ru/dsh-approval-remember.md) · [dsh-mobile-spike: контракт плагина](docs/ru/dsh-mobile-spike.md)
 - [dsh-mobile: что в репозитории и что работает](docs/ru/dsh-mobile.md) · [dsh-mobile (EN)](docs/en/dsh-mobile.md)
@@ -96,8 +101,10 @@ python packages/mcp-yandex-mail/server.py      # Яндекс.Почта MCP (st
 
 1. Плагины разрабатываются по контракту DSH: `package.json` → `dsh.bundle.patch`, `cordis.patch.yml`, README.
 2. Каждый пакет автономен: не тянет зависимости хоста без необходимости, не хранит секреты в коде.
-3. Все новые плагины публикуются в этот репозиторий **автоматически** — без отдельного запроса и подтверждения.
-4. Документация — двуязычная (RU/EN), в стиле GitHub: заголовки, таблицы, схемы, примеры команд.
+3. Все новые плагины, настройки и правила публикуются в этот репозиторий **автоматически** — вместе
+   с ранее созданными, которые дополняются и поддерживаются — без отдельного запроса и подтверждения.
+4. Документация — двуязычная (RU/EN), в стиле GitHub: заголовки, таблицы, схемы, примеры команд;
+   текст — человеческим языком, эмодзи — умеренно.
 5. Секреты — только в защищённом хранилище (`_secrets`), не в репозитории.
 
 ## Безопасность
@@ -117,7 +124,7 @@ python packages/mcp-yandex-mail/server.py      # Яндекс.Почта MCP (st
 Repository of **DeepSeek Harness (DSH)** plugins and MCP servers. Every package follows DSH conventions:
 `package.json` with `dsh.bundle`, `cordis.patch.yml`, documentation, test harness, license.
 
-The kit connects DSH to external systems (Sarex, Yandex Mail) through MCP and gives agents a single,
+The kit connects DSH to external systems (Sarex, Yandex Mail, GitHub) through MCP and gives agents a single,
 predictable access path — no ad-hoc scripts per task.
 
 | Package | Purpose | Stack |
@@ -125,6 +132,7 @@ predictable access path — no ad-hoc scripts per task.
 | [`dsh-mcp-client`](packages/dsh-mcp-client) | MCP client for DSH: spawns MCP servers and registers their tools as native DSH tools | Node.js (ESM) |
 | [`mcp-sarex`](packages/mcp-sarex) | Sarex MCP server: Keycloak auth, notifications, generic API requests, interactive 2FA login | Python 3.12 |
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | Yandex Mail MCP server: status, folders, fast header search, read, attachments, send | Python 3.12 |
+| [`mcp-github-universal`](packages/mcp-github-universal) | Universal GitHub access over MCP: the official remote GitHub server (repositories, issues, PRs, Actions, code security) + a local Git server | Remote MCP + Python 3.12 (venv) |
 | [`dsh-approval-remember`](packages/dsh-approval-remember) | «Always allow» button in the approval panel: the rule is remembered and reused for similar scenarios | DSH client plugin |
 | [`dsh-mobile-spike`](packages/dsh-mobile-spike) | Minimal plugin spike: in-process entry, loopback route, own HTTP listener and a clean dispose | Node.js |
 | [`dsh-mobile`](packages/dsh-mobile) | Remote control of DSH from a phone: LAN gateway, pairing, SSE, PWA and an in-process session bridge; viewing costs no tokens. **Early prototype 0.1.0** — production uses the same-name upstream `saya-ch/dsh-mobile` 0.6.16, see [docs/en/dsh-mobile.md](docs/en/dsh-mobile.md) | Node.js + PWA |
@@ -140,14 +148,18 @@ flowchart LR
     DSH --> P[dsh-mcp-client]
     P -->|stdio JSON-RPC| S1[mcp-sarex]
     P -->|stdio JSON-RPC| S2[mcp-yandex-mail]
+    P -->|streamable-http + PAT| S3[mcp-github-universal]
     S1 --> KC[Keycloak SSO]
     S1 --> API[Sarex API]
     S2 --> IMAP[IMAP]
     S2 --> SMTP[SMTP]
+    S3 --> GH[GitHub API: repos · issues · PR · Actions]
+    S3 --> LG[Local git: commit · diff · branches]
 ```
 
 ### Diagrams and documentation
 
+- [mcp-github-universal: GitHub over MCP](docs/en/mcp-github-universal.md) · [mcp-github-universal (RU)](docs/ru/mcp-github-universal.md)
 - [mcp-cua: desktop control](docs/en/mcp-cua.md) · [mcp-kot: OpenClaw bridge](docs/en/mcp-kot.md)
 - [dsh-approval-remember: Always allow](docs/en/dsh-approval-remember.md) · [dsh-mobile-spike: plugin contract](docs/en/dsh-mobile-spike.md)
 - [dsh-mobile: repo vs running setup](docs/en/dsh-mobile.md) · [dsh-mobile (RU)](docs/ru/dsh-mobile.md)
@@ -167,8 +179,10 @@ python packages/mcp-yandex-mail/server.py
 
 1. Plugins follow the DSH contract (`dsh.bundle.patch`, `cordis.patch.yml`, README).
 2. Every package is self-contained and keeps secrets out of code.
-3. New plugins are published to this repository **automatically**, without a separate request or confirmation.
-4. Documentation is bilingual (RU/EN) in GitHub style: headings, tables, diagrams, command examples.
+3. New plugins, settings and rules are published to this repository **automatically** — together
+   with previously created ones, which are backfilled and maintained — without a separate request or confirmation.
+4. Documentation is bilingual (RU/EN) in GitHub style: headings, tables, diagrams, command examples;
+   the text is human-readable, emojis are used sparingly.
 5. Secrets live only in the local protected store (`_secrets`), never in the repository.
 
 ### Security
