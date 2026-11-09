@@ -32,6 +32,7 @@ MCP-протокол и дать агентам единый, предсказу
 | [`mcp-sarex`](packages/mcp-sarex) | MCP-сервер Sarex: Keycloak-авторизация, уведомления, произвольные запросы к API, интерактивный вход с 2FA | Python 3.12 |
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | MCP-сервер Яндекс.Почты: статус, папки, быстрый поиск по заголовкам, чтение, вложения, отправка | Python 3.12 |
 | [`mcp-github-universal`](packages/mcp-github-universal) | Универсальный доступ к GitHub по MCP: официальный удалённый сервер GitHub (репозитории, issues, PR, Actions, code security) + локальный Git-сервер | Удалённый MCP + Python 3.12 (venv) |
+| [`dsh-memory-hub`](packages/dsh-memory-hub) | Общая память всех чатов и workspace: векторный recall, кэш задач, авто-рутины, Obsidian, профиль стиля, недельный анализ | Node.js 22 (`node:sqlite`) |
 | [dsh-approval-remember](packages/dsh-approval-remember) | Кнопка «Разрешать всегда» в окне подтверждения: правило запоминается и применяется к подобным сценариям | DSH client plugin |
 | [dsh-mobile-spike](packages/dsh-mobile-spike) | Минимальный спайк плагина: in-process вход, loopback-маршрут, свой HTTP-листенер и корректный dispose | Node.js |
 | [`dsh-mobile`](packages/dsh-mobile) | Удалённое управление DSH с телефона: LAN-шлюз, pairing, SSE, PWA и in-process мост к сессиям; просмотр не тратит токены. **Ранний прототип 0.1.0** — в работе используется одноимённый upstream `saya-ch/dsh-mobile` 0.6.16, см. [docs/ru/dsh-mobile.md](docs/ru/dsh-mobile.md) | Node.js + PWA |
@@ -60,6 +61,9 @@ flowchart LR
     S2 --> SMTP[SMTP smtp.yandex.ru]
     S3 --> GH[GitHub API: repos · issues · PR · Actions]
     S3 --> LG[Локальный git: commit · diff · ветки]
+    DSH --> MEM[dsh-memory-hub]
+    MEM --> RU2[node:sqlite · вектор+BM25]
+    MEM --> OBS[Obsidian vault · Факты и рутины]
 ```
 
 ## Быстрый старт
@@ -90,6 +94,7 @@ python packages/mcp-yandex-mail/server.py      # Яндекс.Почта MCP (st
 - [Правила разработки и публикации](CONTRIBUTING.md) — двуязычные
 - [Глобальное правило публикации](docs/ru/global-rule.md) · [Global rule (EN)](docs/en/global-rule.md)
 - [mcp-github-universal: GitHub по MCP](docs/ru/mcp-github-universal.md) · [mcp-github-universal (EN)](docs/en/mcp-github-universal.md)
+- [dsh-memory-hub: общий контекст памяти](docs/ru/dsh-memory-hub.md) · [dsh-memory-hub (EN)](docs/en/dsh-memory-hub.md)
 - [mcp-cua: управление рабочим столом](docs/ru/mcp-cua.md) · [mcp-kot: мост к OpenClaw](docs/ru/mcp-kot.md)
 - [dsh-approval-remember: «Разрешать всегда»](docs/ru/dsh-approval-remember.md) · [dsh-mobile-spike: контракт плагина](docs/ru/dsh-mobile-spike.md)
 - [dsh-mobile: что в репозитории и что работает](docs/ru/dsh-mobile.md) · [dsh-mobile (EN)](docs/en/dsh-mobile.md)
@@ -133,6 +138,7 @@ predictable access path — no ad-hoc scripts per task.
 | [`mcp-sarex`](packages/mcp-sarex) | Sarex MCP server: Keycloak auth, notifications, generic API requests, interactive 2FA login | Python 3.12 |
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | Yandex Mail MCP server: status, folders, fast header search, read, attachments, send | Python 3.12 |
 | [`mcp-github-universal`](packages/mcp-github-universal) | Universal GitHub access over MCP: the official remote GitHub server (repositories, issues, PRs, Actions, code security) + a local Git server | Remote MCP + Python 3.12 (venv) |
+| [`dsh-memory-hub`](packages/dsh-memory-hub) | Shared memory of all chats and workspaces: vector recall, task cache, auto-routines, Obsidian, style profile, weekly analysis | Node.js 22 (`node:sqlite`) |
 | [`dsh-approval-remember`](packages/dsh-approval-remember) | «Always allow» button in the approval panel: the rule is remembered and reused for similar scenarios | DSH client plugin |
 | [`dsh-mobile-spike`](packages/dsh-mobile-spike) | Minimal plugin spike: in-process entry, loopback route, own HTTP listener and a clean dispose | Node.js |
 | [`dsh-mobile`](packages/dsh-mobile) | Remote control of DSH from a phone: LAN gateway, pairing, SSE, PWA and an in-process session bridge; viewing costs no tokens. **Early prototype 0.1.0** — production uses the same-name upstream `saya-ch/dsh-mobile` 0.6.16, see [docs/en/dsh-mobile.md](docs/en/dsh-mobile.md) | Node.js + PWA |
@@ -155,6 +161,9 @@ flowchart LR
     S2 --> SMTP[SMTP]
     S3 --> GH[GitHub API: repos · issues · PR · Actions]
     S3 --> LG[Local git: commit · diff · branches]
+    DSH --> MEM[dsh-memory-hub]
+    MEM --> RU2[node:sqlite · vector+BM25]
+    MEM --> OBS[Obsidian vault · facts and routines]
 ```
 
 ### Diagrams and documentation
