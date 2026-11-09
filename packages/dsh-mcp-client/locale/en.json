@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "MCP client for DSH",
+    "description": "Spawns MCP servers (Sarex, Yandex Mail, git, Cua), registers their tools as native DSH tools and restores Kimi chats."
+  }
+}

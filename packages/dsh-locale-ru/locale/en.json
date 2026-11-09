@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Russian language pack",
+    "description": "Adds a Russian interface entry to DeepSeek Harness with per-package dictionaries and an ru-then-en fallback."
+  }
+}

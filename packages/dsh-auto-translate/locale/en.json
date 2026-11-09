@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Auto-translate (third-party services)",
+    "description": "Optional browser-side translation of every visible DSH page through Google, MyMemory, Lingva or DeepL; off by default, no model tokens."
+  }
+}

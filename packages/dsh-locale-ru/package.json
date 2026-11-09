@@ -9,7 +9,9 @@
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./locales/*.json": "./locales/*.json"
   },
   "files": [
     "lib/index.js",
@@ -18,7 +20,9 @@
     "tools/install.mjs",
     "cordis.patch.yml",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "locale/*.json",
+    "locales/*.json"
   ],
   "keywords": [
     "dsh-plugin",
