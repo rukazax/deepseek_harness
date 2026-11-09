@@ -1,0 +1,17 @@
+# Общая память DSH: векторный+BM25 recall по всем чатам и workspace, кэш задач,
+# майнер рутин, Obsidian-синхронизация, профиль стиля, недельный причинный анализ.
+# Внешних зависимостей нет: node:sqlite, node:fs, node:crypto.
+- insert:
+    - id: memory-hub
+      name: dsh-memory-hub
+      config:
+        enabled: true
+        recallChars: 900
+        recallLimit: 3
+        minRecallScore: 0.32
+        routineMinScore: 0.45
+        autoMine: true
+        weeklyAnalysis: true
+        vaultSync: true
+        vaultPath: null
+        dbPath: null
