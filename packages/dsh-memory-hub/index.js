@@ -963,29 +963,30 @@ function apply(ctx, rawConfig) {
 	/* ── dashboard API ── */
 	try {
 		if (ctx.webServer?.register !== undefined) {
-			const json = (body) => new Response(JSON.stringify(body), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+			const json = (res, body) => { res.setHeader("content-type", "application/json; charset=utf-8"); res.setHeader("cache-control", "no-store"); res.end(JSON.stringify(body)); };
+			const handler = (make) => (req, res) => { try { json(res, make()); } catch (e) { warn(ctx, String(e)); res.end(JSON.stringify({ error: String(e) })); } };
 			disposers.push(ctx.webServer.register({
 				kind: "exact",
 				path: "/api/memory-hub/stats",
-				resource: () => json(statsPayload())
+				handler: handler(() => statsPayload())
 			}));
 			disposers.push(ctx.webServer.register({
 				kind: "exact",
 				path: "/api/memory-hub/analysis",
-				resource: () => json({
+				handler: handler(() => ({
 					at: Number(store.metaGet("lastAnalysisAt") ?? 0),
 					analysis: store.metaGet("lastAnalysis") ?? ""
-				})
+				})),
 			}));
 			disposers.push(ctx.webServer.register({
 				kind: "exact",
 				path: "/api/memory-hub/run-analysis",
-				resource: () => json({ ok: true, analysis: runWeeklyAnalysis() })
+				handler: (req, res) => { try { const analysis = runWeeklyAnalysis(); json(res, { ok: true, analysis }); } catch (e) { warn(ctx, String(e)); json(res, { error: String(e) }); } }
 			}));
 			disposers.push(ctx.webServer.register({
 				kind: "exact",
 				path: "/api/memory-hub/run-mining",
-				resource: async () => { await runMining(true); return json({ ok: true }); }
+				handler: async (req, res) => { try { await runMining(true); json(res, { ok: true }); } catch (e) { warn(ctx, String(e)); json(res, { error: String(e) }); } }
 			}));
 		}
 	} catch (error) {

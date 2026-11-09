@@ -15,8 +15,8 @@ window.__ModuleLoader__.load({
   factory(require) {
     const module = { exports: {} };
 
-    /** Services this plugin needs from the client tree (locale is a cheap guarantee of late loading order). */
-    const inject = ['locale'];
+    /** Services this plugin needs from the client tree. */
+    const inject = ['locale', 'slots'];
 
     /** Storage keys and defaults. */
     const LS = {
@@ -461,8 +461,28 @@ window.__ModuleLoader__.load({
       if (getString(LS.enabled, '') === '1') start();
     }
 
+    function mountSlotPill(ctx) {
+      if (ctx.slots?.register === undefined) return;
+      const React = require('react');
+      const h = React.createElement;
+      const pill = h('button', {
+        type: 'button',
+        title: 'Автоперевод: клик — включить/выключить; правый — сервис/ключ; Ctrl — смена сервиса',
+        style: {
+          all: 'unset', cursor: 'pointer', fontSize: 12, color: 'var(--dsw-alias-accent, #4b6bfb)',
+          whiteSpace: 'nowrap',
+        },
+        onClick: () => state?.button?.click?.(),
+      }, () => '🌐 автоперевод: ' + (state.status === 'off' ? 'выкл' : 'вкл · ' + currentService()));
+      ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register(
+        { name: 'conversation.composer.dock', id: 'dsh-auto-translate', order: 4 },
+        () => pill,
+      ));
+    }
+
     module.exports.inject = inject;
     module.exports.apply = (ctx) => {
+      try { mountSlotPill(ctx); } catch (e) { try { console.warn('[auto-translate] pill skip', e); } catch {} }
       boot();
       ctx.effect?.(() => () => {
         restoreAll();
