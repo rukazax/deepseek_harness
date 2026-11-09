@@ -33,14 +33,10 @@ MCP-протокол и дать агентам единый, предсказу
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | MCP-сервер Яндекс.Почты: статус, папки, быстрый поиск по заголовкам, чтение, вложения, отправка | Python 3.12 |
 | [`mcp-github-universal`](packages/mcp-github-universal) | Универсальный доступ к GitHub по MCP: официальный удалённый сервер GitHub (репозитории, issues, PR, Actions, code security) + локальный Git-сервер | Удалённый MCP + Python 3.12 (venv) |
 | [`dsh-memory-hub`](packages/dsh-memory-hub) | Общая память всех чатов и workspace: векторный recall, кэш задач, авто-рутины, Obsidian, профиль стиля, недельный анализ | Node.js 22 (`node:sqlite`) |
-| [dsh-approval-remember](packages/dsh-approval-remember) | Кнопка «Разрешать всегда» в окне подтверждения: правило запоминается и применяется к подобным сценариям | DSH client plugin |
-| [dsh-mobile-spike](packages/dsh-mobile-spike) | Минимальный спайк плагина: in-process вход, loopback-маршрут, свой HTTP-листенер и корректный dispose | Node.js |
-| [`dsh-mobile`](packages/dsh-mobile) | Удалённое управление DSH с телефона: LAN-шлюз, pairing, SSE, PWA и in-process мост к сессиям; просмотр не тратит токены. **Ранний прототип 0.1.0** — в работе используется одноимённый upstream `saya-ch/dsh-mobile` 0.6.16, см. [docs/ru/dsh-mobile.md](docs/ru/dsh-mobile.md) | Node.js + PWA |
 | [`mcp-cua`](packages/mcp-cua) | Computer use для Windows: окна, UIA-дерево, скриншоты, клики и ввод через Cua Driver 0.28.0 | Node.js (ESM) |
-| [`mcp-kot`](packages/mcp-kot) | Мост к агенту Kot в OpenClaw: один ход агента плюс состояние Gateway, каналов, агентов и сессий | Node.js (ESM) |
 | [`dsh-locale-ru`](packages/dsh-locale-ru) | Русский язык веб-интерфейса: пункт «Русский» в настройках и словари для всех клиентских пакетов, откат `ru → en` | Node.js (ESM), без сборки |
+| [`dsh-auto-translate`](packages/dsh-auto-translate) | Опциональный автоперевод всех окон и страниц DSH сторонними сервисами в браузере, по умолчанию выключен: MyMemory/Google/Lingva без ключа, DeepL по ключу; выключение возвращает оригиналы; ноль токенов модели | Node.js (ESM), без сборки |
 | [`dsh-sync`](packages/dsh-sync) | Двусторонняя синхронизация истории сессий DSH между Windows-установкой и Linux-инстансом: sha256, конвертация `cwd` в заголовке, push/pull, бэкапы конфликтов. Утилита, а не плагин: `cordis.patch.yml` не требуется | PowerShell 5.1 + Node.js 22 |
-| [`claude-bridge`](packages/claude-bridge) | Подписка Claude Pro/Max внутри DSH: локальный Anthropic-совместимый мост выполняет запросы через `claude` CLI — без API-ключа и оплаты по токенам | Node.js (ESM), без зависимостей |
 
 ## Архитектура
 
@@ -95,11 +91,10 @@ python packages/mcp-yandex-mail/server.py      # Яндекс.Почта MCP (st
 - [Глобальное правило публикации](docs/ru/global-rule.md) · [Global rule (EN)](docs/en/global-rule.md)
 - [mcp-github-universal: GitHub по MCP](docs/ru/mcp-github-universal.md) · [mcp-github-universal (EN)](docs/en/mcp-github-universal.md)
 - [dsh-memory-hub: общий контекст памяти](docs/ru/dsh-memory-hub.md) · [dsh-memory-hub (EN)](docs/en/dsh-memory-hub.md)
-- [mcp-cua: управление рабочим столом](docs/ru/mcp-cua.md) · [mcp-kot: мост к OpenClaw](docs/ru/mcp-kot.md)
-- [dsh-approval-remember: «Разрешать всегда»](docs/ru/dsh-approval-remember.md) · [dsh-mobile-spike: контракт плагина](docs/ru/dsh-mobile-spike.md)
-- [dsh-mobile: что в репозитории и что работает](docs/ru/dsh-mobile.md) · [dsh-mobile (EN)](docs/en/dsh-mobile.md)
 - [dsh-sync: синхронизация истории сессий](docs/ru/dsh-sync.md) · [dsh-sync (EN)](docs/en/dsh-sync.md)
-- [claude-bridge: подписка Claude в DSH](docs/ru/claude-bridge.md)
+- [mcp-cua: управление рабочим столом](docs/ru/mcp-cua.md)
+- [dsh-auto-translate: автоперевод интерфейса](packages/dsh-auto-translate/README.md)
+- [Linux (Ubuntu): установка комплекта](docs/ru/linux-install.md)
 - [Безопасность и секреты](docs/ru/security.md) · [Security (EN)](docs/en/security.md)
 
 ## Правила
@@ -139,14 +134,10 @@ predictable access path — no ad-hoc scripts per task.
 | [`mcp-yandex-mail`](packages/mcp-yandex-mail) | Yandex Mail MCP server: status, folders, fast header search, read, attachments, send | Python 3.12 |
 | [`mcp-github-universal`](packages/mcp-github-universal) | Universal GitHub access over MCP: the official remote GitHub server (repositories, issues, PRs, Actions, code security) + a local Git server | Remote MCP + Python 3.12 (venv) |
 | [`dsh-memory-hub`](packages/dsh-memory-hub) | Shared memory of all chats and workspaces: vector recall, task cache, auto-routines, Obsidian, style profile, weekly analysis | Node.js 22 (`node:sqlite`) |
-| [`dsh-approval-remember`](packages/dsh-approval-remember) | «Always allow» button in the approval panel: the rule is remembered and reused for similar scenarios | DSH client plugin |
-| [`dsh-mobile-spike`](packages/dsh-mobile-spike) | Minimal plugin spike: in-process entry, loopback route, own HTTP listener and a clean dispose | Node.js |
-| [`dsh-mobile`](packages/dsh-mobile) | Remote control of DSH from a phone: LAN gateway, pairing, SSE, PWA and an in-process session bridge; viewing costs no tokens. **Early prototype 0.1.0** — production uses the same-name upstream `saya-ch/dsh-mobile` 0.6.16, see [docs/en/dsh-mobile.md](docs/en/dsh-mobile.md) | Node.js + PWA |
 | [`mcp-cua`](packages/mcp-cua) | Computer use for Windows: windows, UIA tree, screenshots, clicks and typing through Cua Driver 0.28.0 | Node.js (ESM) |
-| [`mcp-kot`](packages/mcp-kot) | Bridge to the Kot agent in OpenClaw: one agent turn plus Gateway, channel, agent and session state | Node.js (ESM) |
 | [`dsh-locale-ru`](packages/dsh-locale-ru) | Russian language for the web UI: a «Русский» entry in settings plus dictionaries for every client package, `ru → en` fallback | Node.js (ESM), no build step |
+| [`dsh-auto-translate`](packages/dsh-auto-translate) | Optional browser-side auto-translation of any window or page of DSH through third-party services, off by default: keyless MyMemory/Google/Lingva, DeepL with a key; switching off restores originals; zero model tokens | Node.js (ESM), no build step |
 | [`dsh-sync`](packages/dsh-sync) | Two-way sync of DSH session history between a Windows install and a Linux instance: sha256, header `cwd` conversion, push/pull, conflict backups. A utility, not a plugin: no `cordis.patch.yml` needed | PowerShell 5.1 + Node.js 22 |
-| [`claude-bridge`](packages/claude-bridge) | A Claude Pro/Max subscription inside DSH: a loopback Anthropic-compatible bridge executes requests through the `claude` CLI — no API key, no token billing | Node.js (ESM), no dependencies |
 
 ```mermaid
 flowchart LR
@@ -169,11 +160,10 @@ flowchart LR
 ### Diagrams and documentation
 
 - [mcp-github-universal: GitHub over MCP](docs/en/mcp-github-universal.md) · [mcp-github-universal (RU)](docs/ru/mcp-github-universal.md)
-- [mcp-cua: desktop control](docs/en/mcp-cua.md) · [mcp-kot: OpenClaw bridge](docs/en/mcp-kot.md)
-- [dsh-approval-remember: Always allow](docs/en/dsh-approval-remember.md) · [dsh-mobile-spike: plugin contract](docs/en/dsh-mobile-spike.md)
-- [dsh-mobile: repo vs running setup](docs/en/dsh-mobile.md) · [dsh-mobile (RU)](docs/ru/dsh-mobile.md)
 - [dsh-sync: session history sync](docs/en/dsh-sync.md) · [dsh-sync (RU)](docs/ru/dsh-sync.md)
-- [claude-bridge: a Claude subscription in DSH](docs/en/claude-bridge.md)
+- [mcp-cua: desktop control](docs/en/mcp-cua.md)
+- [dsh-auto-translate: interface auto-translation](packages/dsh-auto-translate/README.md)
+- [Linux (Ubuntu): installing the kit](docs/en/linux-install.md)
 
 ### Quick start
 
