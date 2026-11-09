@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- dsh-memory-hub: сети памяти (узлы и связи) -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#12172b"/>
+  <circle cx="22" cy="20" r="7" fill="#5b7cfa"/>
+  <circle cx="44" cy="18" r="5" fill="#3fb27f"/>
+  <circle cx="16" cy="42" r="5" fill="#e8b74a"/>
+  <circle cx="38" cy="34" r="8" fill="#b068e0"/>
+  <circle cx="48" cy="46" r="6" fill="#5b7cfa"/>
+  <path d="M22 20L44 18M22 20L38 34M38 34L44 18M38 34L16 42M38 34L48 46M16 42L48 46" stroke="#93a4c6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>
