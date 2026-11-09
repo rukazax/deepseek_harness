@@ -560,7 +560,8 @@ function apply(ctx, rawConfig) {
 				const ts = Number(event.time ?? Date.now());
 				const msg = data.message ?? data;
 				const msgRole = msg?.role ?? "";
-				if (event.type === "user/message" && msgRole === "user") {
+				const srcKind = msg?.source?.kind;
+				if (event.type === "user/message" && msgRole === "user" && (srcKind === undefined || srcKind === "user" || srcKind === "goal" || srcKind === "user-rpc")) {
 					const text = (msg.content ?? []).filter((b) => b?.type === "text").map((b) => b.text ?? "").join("\n");
 					if (text.trim().length < 12) return;
 					addChunk("chat_user", text, meta.project, meta.sessionId, data.turn ?? 0);
@@ -601,6 +602,7 @@ function apply(ctx, rawConfig) {
 				store.taskUpsert(tokenId, open.project, open.sessionId, open.turn, open.title || clip(open.userText, 120), key, open.solution || null, open.startedAt, Date.now());
 				addChunk("task", `${open.title || clip(open.userText, 120)} ${open.solution ? clip(open.solution, 600) : ""}`, open.project, open.sessionId, open.turn);
 				openTurns.delete(session);
+				if (config.autoMine) runMining(false);
 			} catch (error) {
 				warn(ctx, `turn folder failed: ${String(error)}`);
 			}
@@ -723,8 +725,9 @@ function apply(ctx, rawConfig) {
 		const project = sessionMeta(session).project;
 		const qvec = embed(query, idfCurrent());
 		const scored = [];
+		const qEcho = String(query).replace(/\s+/g, " ").trim().slice(0, 600);
 		for (const cand of store.candidates(kinds, 1600, project)) {
-			if (cand.session_id === sessionMeta(session).sessionId && (cand.kind === "chat_user" || cand.kind === "chat_assistant")) continue;
+			if (cand.kind === "chat_user" && String(cand.text).replace(/\s+/g, " ").trim().slice(0, 600) === qEcho) continue;
 			const candVec = new Map(JSON.parse(cand.vec));
 			const cos = cosine(qvec, candVec);
 			const cov = coverage(query, cand.text);
@@ -765,6 +768,7 @@ function apply(ctx, rawConfig) {
 			interpolate: false,
 			text: (assemblyContext) => {
 				try {
+					store.metaPut("mh_recallCalls", String(Number(store.metaGet("mh_recallCalls") ?? 0) + 1));
 					const agent = assemblyContext?.agent;
 					if (agent === undefined) return "";
 					const session = agent.session;
