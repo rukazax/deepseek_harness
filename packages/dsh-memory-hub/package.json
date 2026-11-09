@@ -1,0 +1,26 @@
+{
+  "name": "dsh-memory-hub",
+  "version": "0.1.0",
+  "description": "Shared cross-chat and cross-workspace memory for DeepSeek Harness: vector+BM25 recall, task cache, routine mining, stats, Obsidian sync, style profile and weekly causal analysis",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": ["index.js", "client.js", "cordis.patch.yml", "README.md", "icon.svg", "locale/*.json"],
+  "keywords": ["dsh-plugin", "deepseek-harness", "memory", "rag", "vector-search", "routines", "skills", "obsidian", "analytics"],
+  "author": "rukazax",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/rukazax/deepseek_harness.git", "directory": "packages/dsh-memory-hub" },
+  "homepage": "https://github.com/rukazax/deepseek_harness/tree/main/packages/dsh-memory-hub",
+  "bugs": { "url": "https://github.com/rukazax/deepseek_harness/issues" },
+  "engines": { "node": ">=22.19" },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": { "platform": "web", "immediately": true, "inject": ["@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-sidebar-right"] }
+  }
+}
