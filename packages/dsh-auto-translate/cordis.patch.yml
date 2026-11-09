@@ -1,0 +1,6 @@
+# Mount the auto-translate plugin.
+# The host half is side-effect free (placeholder until Settings → Plugins can toggle it).
+# The browser half registers the floating toggle, the DOM watcher and the service adapters.
+- insert:
+    - id: dsh-auto-translate
+      name: dsh-auto-translate
