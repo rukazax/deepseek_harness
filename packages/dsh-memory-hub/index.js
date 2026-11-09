@@ -548,16 +548,23 @@ function apply(ctx, rawConfig) {
 				const data = event?.data ?? {};
 				const debug = Number(store.metaGet("mh_events") ?? 0) + 1;
 				store.metaPut("mh_events", String(debug));
-				const kind = data.source?.kind;
-				if (kind !== undefined && kind !== "user" && kind !== "assistant") return;
+				try {
+					const types = JSON.parse(store.metaGet("mh_types") ?? "{}");
+					types[event?.type ?? "?"] = (types[event?.type ?? "?"] ?? 0) + 1;
+					types[`src:${data?.source?.kind ?? "?"}`] = (types[`src:${data?.source?.kind ?? "?"}`] ?? 0) + 1;
+					store.metaPut("mh_types", JSON.stringify(types));
+				} catch { /* debug only */ }
+				if (data.source?.kind === "memory-hub") return;
 				stats.lastEventAt = Date.now();
 				const meta = sessionMeta(session);
 				const ts = Number(event.time ?? Date.now());
-				if (event.type === "user/message") {
-					store.metaPut("mh_user", String(Number(store.metaGet("mh_user") ?? 0) + 1));
-					const text = (data.content ?? []).filter((b) => b?.type === "text").map((b) => b.text ?? "").join("\n");
+				const msg = data.message ?? data;
+				const msgRole = msg?.role ?? "";
+				if (event.type === "user/message" && msgRole === "user") {
+					const text = (msg.content ?? []).filter((b) => b?.type === "text").map((b) => b.text ?? "").join("\n");
 					if (text.trim().length < 12) return;
 					addChunk("chat_user", text, meta.project, meta.sessionId, data.turn ?? 0);
+					trackTerms(text);
 					const open = openTurns.get(session) ?? { turn: data.turn ?? 0, project: meta.project, sessionId: meta.sessionId, title: "", userText: "", solution: "", startedAt: ts };
 					open.turn = data.turn ?? open.turn;
 					open.title = open.title ?? clip(text, 160);
@@ -568,8 +575,8 @@ function apply(ctx, rawConfig) {
 						store.writeIdf({ docCount, df: idf });
 						idfDirty = 0;
 					}
-				} else if (event.type === "assistant/message") {
-					const text = (data.content ?? []).filter((b) => b?.type === "text").map((b) => b.text ?? "").join("\n");
+				} else if (event.type === "assistant/message" && msgRole === "assistant") {
+					const text = (msg.content ?? []).filter((b) => b?.type === "text").map((b) => b.text ?? "").join("\n");
 					if (text.trim().length < 40) return;
 					accumulateStyle(style, text);
 					store.metaPut("style_stats", JSON.stringify(style));
@@ -578,6 +585,7 @@ function apply(ctx, rawConfig) {
 					if (open !== undefined) open.solution = text;
 				}
 			} catch (error) {
+				try { store.metaPut("mh_fail", `${new Date().toISOString()} ${String(error?.message ?? error)}`); } catch { /* ignore */ }
 				warn(ctx, `ingest failed: ${String(error)}`);
 			}
 		});
@@ -1023,3 +1031,5 @@ function apply(ctx, rawConfig) {
 
 const Config = undefined;
 export { name, Config, inject, apply };
+
+
