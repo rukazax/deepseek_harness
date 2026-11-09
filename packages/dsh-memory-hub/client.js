@@ -7,13 +7,13 @@ window.__ModuleLoader__.load({
     const API = {
       async stats() {
         try {
-          const res = await fetch('/api/memory-hub/stats', { headers: { accept: 'application/json' } });
+          const res = await fetch('api/memory-hub/stats', { headers: { accept: 'application/json' } });
           return res.ok ? await res.json() : null;
         } catch { return null; }
       },
       async analysis() {
         try {
-          const res = await fetch('/api/memory-hub/analysis', { headers: { accept: 'application/json' } });
+          const res = await fetch('api/memory-hub/analysis', { headers: { accept: 'application/json' } });
           return res.ok ? await res.json() : null;
         } catch { return null; }
       },
@@ -101,8 +101,8 @@ window.__ModuleLoader__.load({
           h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 4 } }, (stats.hotTerms ?? []).map((t) => h('span', { key: t.term, style: cardCss.chip }, `${t.term} (${t.n})`)))),
         h('div', { style: css.section }, h('div', { style: css.title }, 'Недельный анализ'),
           h('div', { style: { display: 'flex', gap: 8, marginBottom: 8 } },
-            h('button', { style: css.btn, onClick: async () => { const r = await API.run('/api/memory-hub/run-analysis'); if (r) setAnalysis({ at: Date.now(), analysis: r.analysis }); } }, '▶ Запустить анализ'),
-            h('button', { style: css.btn, onClick: async () => { await API.run('/api/memory-hub/run-mining'); load(); } }, '⛏ Пересобрать рутины')),
+            h('button', { style: css.btn, onClick: async () => { const r = await API.run('api/memory-hub/run-analysis'); if (r) setAnalysis({ at: Date.now(), analysis: r.analysis }); } }, '▶ Запустить анализ'),
+            h('button', { style: css.btn, onClick: async () => { await API.run('api/memory-hub/run-mining'); load(); } }, '⛏ Пересобрать рутины')),
           h('div', { style: cardCss.small }, `Обновлён: ${analysis?.at ? new Date(analysis.at).toLocaleString('ru-RU') : '—'}`),
           h('pre', { style: cardCss.pre }, analysis?.analysis || 'Анализ ещё не выполнялся.')),
         h('div', { style: { ...cardCss.small, marginTop: 12 } }, `Vault: ${String(stats.vault?.path ?? '')} · запущен: ${new Date(stats.startedAt).toLocaleString('ru-RU')}`));
@@ -111,6 +111,7 @@ window.__ModuleLoader__.load({
     return {
       inject: ['slots', 'sidebarRightTabs', 'sidebarRight'],
       apply(ctx) {
+        try { console.info('[memory-hub] client boot (l10n-safe paths)'); } catch {}
         ctx.effect?.(() => () => { /* registrations below are effect-owned via slots.inject */ });
         // Informer under the composer
         ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register(

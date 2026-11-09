@@ -1,6 +1,6 @@
 {
   "name": "dsh-memory-hub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared cross-chat and cross-workspace memory for DeepSeek Harness: vector+BM25 recall, task cache, routine mining, Observability stats, Obsidian sync, style profile and weekly causal analysis",
   "type": "module",
   "main": "./index.js",
@@ -46,11 +46,16 @@
     "node": ">=22.19"
   },
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "immediately": true,
-      "inject": ["@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-sidebar-right"]
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
     }
   }
 }

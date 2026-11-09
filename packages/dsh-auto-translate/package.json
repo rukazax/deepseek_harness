@@ -1,6 +1,6 @@
 {
   "name": "dsh-auto-translate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Auto-translate (third-party services)",
   "description": "Optional auto-translation of any DeepSeek Harness page or dialog through third-party services (Google, Lingva, DeepL): a floating toggle, off by default, DOM watching, original-restore and a per-service cache.",
   "type": "module",

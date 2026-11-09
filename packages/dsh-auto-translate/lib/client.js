@@ -29,10 +29,10 @@ window.__ModuleLoader__.load({
     const TARGET = 'ru';
 
     /** Elements whose text must never be translated. */
+    // Переводим всё видимое: code/pre/kbd тоже. Технические теги исключены.
     const SKIP_TAGS = new Set([
-      'SCRIPT', 'STYLE', 'CODE', 'PRE', 'SVG', 'IFRAME', 'TEXTAREA',
-      'INPUT', 'SELECT', 'NOSCRIPT', 'KBD', 'SAMP', 'VAR', 'CANVAS',
-      'MATH', 'OBJECT', 'EMBED', 'TEMPLATE',
+      'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'IFRAME', 'TEXTAREA',
+      'INPUT', 'SELECT', 'CANVAS', 'MATH', 'OBJECT', 'EMBED',
     ]);
     const MAX_NODE_CHARS = 4500;
     const CONCURRENCY = 5;
@@ -51,6 +51,8 @@ window.__ModuleLoader__.load({
       decay: 0,
       button: null,
       status: 'off',
+      attrTargets: new Set(),  // {el, attr, value}
+      attrApplied: new WeakMap(),
     };
 
     const getString = (key, fallback) => {
@@ -208,6 +210,51 @@ window.__ModuleLoader__.load({
       }
     }, 60_000);
 
+
+    // --- атрибуты (подсказки/плейсхолдеры) и вкладка ------------------------
+    const ATTRS = ['title', 'placeholder', 'aria-label'];
+
+    function attrScan(root) {
+      if (state.status === 'off' || state.status === 'error') return;
+      const els = root.querySelectorAll
+        ? root.querySelectorAll('[title],[placeholder],[aria-label]')
+        : [];
+      for (const el of els) {
+        if (el.closest?.('[data-dsh-at-skip]')) continue;
+        const applied = state.attrApplied.get(el) ?? {};
+        for (const attr of ATTRS) {
+          const value = el.getAttribute(attr);
+          if (typeof value !== 'string') continue;
+          if (!isMeaningful(value) || looksTarget(value)) continue;
+          if (applied[attr] === value) continue;
+          state.attrTargets.add({ el, attr, value });
+        }
+      }
+    }
+
+    async function drainAttrTargets() {
+      const service = currentService();
+      const items = [...state.attrTargets];
+      for (const item of items) {
+        state.attrTargets.delete(item);
+        if (!item.el.isConnected || item.el.getAttribute(item.attr) !== item.value) continue;
+        const done = await translateText(item.value, service);
+        const cur = state.attrApplied.get(item.el) ?? {};
+        if (done && typeof done === 'string' && done.trim() !== '') {
+          try { item.el.setAttribute(item.attr, done); } catch {}
+          cur[item.attr] = done;
+        } else {
+          cur[item.attr] = item.value;
+        }
+        state.attrApplied.set(item.el, cur);
+      }
+    }
+
+    async function translateTitleOnce() {
+      if (!document.title || looksTarget(document.title)) return;
+      const done = await translateText(document.title, currentService());
+      if (done && typeof done === 'string' && done.trim() !== '') document.title = done;
+    }
     // --- DOM walk and queue -------------------------------------------------
 
     function collect(root) {
@@ -226,6 +273,7 @@ window.__ModuleLoader__.load({
 
     function enqueue(root) {
       if (state.status === 'off' || state.status === 'error') return;
+      try { attrScan(root); } catch {}
       for (const node of collect(root)) {
         if (isSkippable(node)) continue;
         if (state.applied.get(node) === node.nodeValue) continue;
@@ -251,7 +299,9 @@ window.__ModuleLoader__.load({
         if (!node) break;
         fire(service, node);
       }
-      if (state.queue.size > 0) setTimeout(pump, 100);
+      drainAttrTargets().then(() => { try { translateTitleOnce(); } catch {} }).catch(() => {});
+      if (state.queue.size > 0 && state.attrTargets.size > 0) setTimeout(pump, 220);
+      else if (state.queue.size > 0) setTimeout(pump, 100);
       else if (state.pending === 0 && state.status === 'busy') idle();
     }
 
