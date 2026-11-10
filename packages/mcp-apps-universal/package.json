@@ -1,0 +1,22 @@
+{
+  "name": "mcp-apps-universal",
+  "version": "1.0.0",
+  "description": "Universal MCP connection bundle: ready-made servers for installed Windows applications (Office COM, Excel, GIMP 3, MSSQL LocalDB)",
+  "type": "module",
+  "exports": {
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": ["cordis.patch.yml", "locale/*.json", "icon.svg"],
+  "author": "rukazax",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rukazax/deepseek_harness.git",
+    "directory": "packages/mcp-apps-universal"
+  },
+  "homepage": "https://github.com/rukazax/deepseek_harness/tree/main/packages/mcp-apps-universal",
+  "bugs": { "url": "https://github.com/rukazax/deepseek_harness/issues" },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+}
