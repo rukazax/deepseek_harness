@@ -9,7 +9,7 @@
 (`~/.dsh/apps-mcp/...`) — оба пути вне ядра dsh и переживают его обновления. Не создаёт
 новых серверов сам, только подключает готовые через `dsh-mcp-client`.
 
-### Состав (первая волна)
+### Состав (первая + вторая волна)
 
 | Приложение | MCP-сервер | Что умеет | Запуск |
 |---|---|---|---|
@@ -17,6 +17,8 @@
 | Excel | [haris-musa/excel-mcp-server](https://github.com/haris-musa/excel-mcp-server) (Python, 4.3k★) | Создание/чтение/редактирование `.xlsx/.xlsm` без Microsoft Excel: таблицы, диаграммы, pivot, формулы, VBA | `venvs/app-excel/Scripts/excel-mcp-server.exe stdio` |
 | GIMP 3 | [SavithOnline/GimpMCP](https://github.com/SavithOnline/GimpMCP) (Python) | Живое управление GIMP 3 через Script-Fu; при отсутствии GUI-GIMP запускает headless автостарт | `venvs/app-gimp/Scripts/gimp-mcp.exe`, `GIMP_MCP_AUTOSTART=1` `GIMP_MCP_ALLOW_HEADLESS=1` |
 | Microsoft SQL Server | [RichardHan/mssql_mcp_server](https://github.com/RichardHan/mssql_mcp_server) (Python, 404★) | Список таблиц, чтение данных, SQL-запросы (pymssql, TCP) | `venvs/app-mssql/Scripts/mssql_mcp_server.exe` — требует `MSSQL_USER/PASSWORD/DATABASE` (отложено: LocalDB до SQL-логина) |
+| **WinRAR** | **своевой** сервер (`mcp-custom/winrar/server.py`) | list/extract/create/test/delete через `Rar.exe`/`UnRAR.exe` CLI (cp866 decode) | `venvs/app-winrar/Scripts/python.exe` + `server.py` |
+| **Яндекс.Диск** | **своевой** сервер (`mcp-custom/yadisk/server.py`) | Локальная зеркальная папка (`YANDEX_DISK_ROOT` по умолчанию `D:\Яндекс.Диск`): list, read, search, status | `venvs/app-yadiskfs/Scripts/python.exe` + `server.py` |
 
 ### Настройка по шагам
 
