@@ -1,0 +1,5 @@
+# Alt+Enter в композере чата = перенос строки (Enter продолжает отправлять).
+# Хостовая половина пустая: вся работа в клиентском модуле (dsh.client).
+- insert:
+    - id: composer-alt-enter
+      name: dsh-composer-alt-enter
