@@ -1,0 +1,58 @@
+# Universal MCP для приложений Windows: готовые серверы (Office COM, Excel, GIMP 3, MSSQL LocalDB)
+# Все серверы живут в ~/.dsh (venv + клон репозитория) вне ядра dsh — переживают его обновления.
+# Каждый сервер — свой venv с изолированными зависимостями; запуск через console-скрипты (exe).
+- insert:
+    # Office COM: Word, Excel, PowerPoint, Outlook — запись в ОТКРЫТЫЕ документы
+    - id: mcp-office
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: office
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-office/Scripts/officemcp.exe
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+
+    # Excel без установки Microsoft Excel — создание/чтение/редактирование xlsx
+    - id: mcp-excel
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: excel
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-excel/Scripts/excel-mcp-server.exe
+        args: ['stdio']
+        env:
+          EXCEL_FILES_PATH: !!js dshHomePath('workspace')
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+
+    # GIMP 3 — живое редактирование изображений через Script-Fu bridge
+    # (автостарт headless GIMP если GUI GIMP не запущен)
+    - id: mcp-gimp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: gimp
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-gimp/Scripts/gimp-mcp.exe
+        env:
+          GIMP_MCP_AUTOSTART: '1'
+          GIMP_MCP_ALLOW_HEADLESS: '1'
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+
+    # Microsoft SQL Server — подключение через MSSQL_CONN (нужен MSSQL_USER/PASSWORD/DATABASE)
+    # для pymssql (TCP + учётная запись SQL). LocalDB — отложено до точки настройки входов:
+    # пока сервер стартует только при выставлённых переменных.
+    - id: mcp-mssql
+      name: '@deepseek-ai/dsh-mcp-client'
+      disabled: !!js "!process.env.MSSQL_USER"
+      config:
+        serverName: mssql
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-mssql/Scripts/mssql_mcp_server.exe
+        env:
+          MSSQL_SERVER: !!js "process.env.MSSQL_SERVER ?? 'localhost'"
+          MSSQL_USER: !!js "process.env.MSSQL_USER ?? ''"
+          MSSQL_PASSWORD: !!js "process.env.MSSQL_PASSWORD ?? ''"
+          MSSQL_DATABASE: !!js "process.env.MSSQL_DATABASE ?? ''"
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
