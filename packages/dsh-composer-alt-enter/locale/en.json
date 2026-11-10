@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Alt+Enter: line break",
+    "description": "In the chat composer Alt+Enter inserts a line break; Enter keeps submitting."
+  }
+}
