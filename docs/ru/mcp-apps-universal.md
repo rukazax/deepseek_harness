@@ -68,3 +68,15 @@ Wave 2: добавлены самописные серверы для прило
 - Backlog wave 3: Obsidian markdown-vault (готовый — pvliesdonk), Windows Edge (chrome-devtools-mcp, node-based), SketchUp 2026 (Ruby COM/API), Foxit PDF Editor (COM), Navisworks 2026 (COM).
 
 Пути: venv — ~/.dsh/venvs/app-{office,excel,gimp,winrar,yadiskfs}, клон репо — ~/.dsh/apps-mcp/{OfficeMCP,excel-mcp-server,GimpMCP,mssql_mcp_server}; свои серверы в ~/.dsh/mcp-custom/{winrar,yadisk}. Всё вне ядра dsh — переживает его обновления.
+---
+
+## Wave 3: собственные серверы (RU)
+
+Wave 3: добавлены ещё четыре **собственные** MCP-сервера:
+- **PDF** — mcp-custom/pdf/server.py: pypdf (merge/split/page_count/text_extract) + Foxit PDF Editor COM FoxitPDFEditor.Application и shell-handler (pdf_open_in_foxit). Foxit и Adobe не имеют готовых MCP, поэтому собственный; а pypdf нельзя запустить как CLI.
+- **SketchUp** — mcp-custom/sketchup/server.py: COM Sketchup.Application — status/open/eval(Ruby)/export(obj/dae/stl/…). Готовых под SketchUp нет, автор sketchup_mcp отсутствует как рабочий на момент публикации.
+- **Navisworks** — mcp-custom/navisworks/server.py: COM Navisworks.Application — status/open/save_as/export(plugin). Готовых под Navisworks нет.
+- **Obsidian vault** — mcp-custom/vault/server.py: легковесный лист/read/write/delete/search (по имени и телу заметки) поверх ~/.dsh/obsidian/vault. Используется когда memory-hub не даёт granular editing.
+
+Ин системные: venv ~/.dsh/venvs/app-{pdf,sketchup,navisworks,vault}/, серверы — ~/.dsh/mcp-custom/{pdf,sketchup,navisworks,vault}/.
+Связка бандла packages/mcp-apps-universal/cordis.patch.yml расширилась: теперь 9 row dsh-mcp-client (office, excel, gimp, mssql-[disabled], winrar, yadisk, pdf, sketchup, navisworks, vault) — используется константный serverName (mcp-office, mcp-excel, …) и private venv + pywin32 для COM-скриптов.
