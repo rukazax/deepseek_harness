@@ -65,3 +65,15 @@ Wave 2 adds custom-built servers for installed apps without ready-made github MC
 - Backlog wave 3: Obsidian markdown-vault (ready — pvliesdonk), Windows Edge (chrome-devtools-mcp, node-based), SketchUp 2026 (Ruby COM/API), Foxit PDF Editor (COM), Navisworks 2026 (COM).
 
 Paths: venvs under ~/.dsh/venvs/app-{office,excel,gimp,winrar,yadiskfs}, repo clones under ~/.dsh/apps-mcp/{OfficeMCP,excel-mcp-server,GimpMCP,mssql_mcp_server}; custom servers in ~/.dsh/mcp-custom/{winrar,yadisk}. All outside the dsh core, surviving its updates.
+---
+
+## Wave 3: custom servers (EN)
+
+Wave 3 adds four more **custom** MCP servers:
+- **PDF** — mcp-custom/pdf/server.py: pypdf (merge/split/page_count/text_extract) + Foxit PDF Editor COM FoxitPDFEditor.Application and a shell fallback (pdf_open_in_foxit). Foxit and Adobe have no ready-made MCP, hence custom.
+- **SketchUp** — mcp-custom/sketchup/server.py: COM Sketchup.Application — status/open/eval(Ruby)/export(obj/dae/stl/…). No SketchUp-specific ready-made server ships.
+- **Navisworks** — mcp-custom/navisworks/server.py: COM Navisworks.Application — status/open/save_as/export(plugin). No ready-made Navisworks server.
+- **Obsidian vault** — mcp-custom/vault/server.py: a lightweight list/read/write/delete/search (filename + body) over ~/.dsh/obsidian/vault.
+
+System: venv ~/.dsh/venvs/app-{pdf,sketchup,navisworks,vault}/, servers — ~/.dsh/mcp-custom/{pdf,sketchup,navisworks,vault}/.
+The bundle packages/mcp-apps-universal/cordis.patch.yml now has 9 dsh-mcp-client rows (office, excel, gimp, mssql-[disabled], winrar, yadisk, pdf, sketchup, navisworks, vault) — each with a distinct serverName and a private venv + pywin32 for COM scripts.
