@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Universal MCP for Windows apps -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#0f1217"/>
+  <rect x="10" y="10" width="22" height="22" rx="5" fill="#c43e1c"/>
+  <text x="21" y="25" text-anchor="middle" fill="#fafbfc" font-size="11" font-weight="600">W</text>
+  <rect x="32" y="10" width="22" height="22" rx="5" fill="#107c41"/>
+  <text x="43" y="25" text-anchor="middle" fill="#fafbfc" font-size="11" font-weight="600">X</text>
+  <rect x="10" y="32" width="22" height="22" rx="5" fill="#41576b"/>
+  <text x="21" y="47" text-anchor="middle" fill="#fafbfc" font-size="11" font-weight="600">S</text>
+  <rect x="32" y="32" width="22" height="22" rx="5" fill="#7a3dff"/>
+  <text x="43" y="47" text-anchor="middle" fill="#fafbfc" font-size="11" font-weight="600">G</text>
+</svg>
