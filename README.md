@@ -161,6 +161,7 @@ flowchart LR
 
 - [mcp-github-universal: GitHub over MCP](docs/en/mcp-github-universal.md) · [mcp-github-universal (RU)](docs/ru/mcp-github-universal.md)
 - [dsh-sync: session history sync](docs/en/dsh-sync.md) · [dsh-sync (RU)](docs/ru/dsh-sync.md)
+- [dsh-composer-alt-enter: Alt+Enter](docs/en/dsh-composer-alt-enter.md)
 - [mcp-cua: desktop control](docs/en/mcp-cua.md)
 - [dsh-auto-translate: interface auto-translation](packages/dsh-auto-translate/README.md)
 - [Linux (Ubuntu): installing the kit](docs/en/linux-install.md)
