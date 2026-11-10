@@ -56,3 +56,30 @@
           MSSQL_DATABASE: !!js "process.env.MSSQL_DATABASE ?? ''"
         toolCallTimeoutMs: 120000
         failOnStartupError: false
+
+    # WinRAR — свой собственный MCP-плагин (Rar.exe/UnRAR.exe CLI bridge).
+    # Windows-приложение WinRAR установлено, но готовых MCP под него нет.
+    - id: mcp-winrar
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: winrar
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-winrar/Scripts/python.exe
+        args: ['C:/Users/AMNovez/.dsh/mcp-custom/winrar/server.py']
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+
+    # Яндекс.Диск — свой собственный MCP-плагин (на локальную зеркальную папку).
+    # Готовые под Yandex Disk используют streamable-http + OAuth: требуют токен и порт,
+    # локальная зеркальная папка на порядки практичнее для агента.
+    - id: mcp-yadisk
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: yadisk
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-yadiskfs/Scripts/python.exe
+        args: ['C:/Users/AMNovez/.dsh/mcp-custom/yadisk/server.py']
+        env:
+          YANDEX_DISK_ROOT: !!js "(process.env.YANDEX_DISK_ROOT ?? 'D:\\\\Яндекс.Диск')"
+        toolCallTimeoutMs: 60000
+        failOnStartupError: false
