@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- dsh-composer-alt-enter: клавиша Alt+Enter с переносом -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#12172b"/>
+  <rect x="14" y="14" width="36" height="20" rx="5" fill="#172033" stroke="#3b4658" stroke-width="2"/>
+  <text x="32" y="29" text-anchor="middle" fill="#dfe8f5" font-size="12" font-family="Segoe UI, Arial">Alt↵</text>
+  <path d="M20 46h24m-6-6 6 6-6 6" stroke="#5b7cfa" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
