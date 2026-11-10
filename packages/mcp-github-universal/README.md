@@ -4,16 +4,18 @@
 
 ## RU
 
-Конфигурационный пакет DeepSeek Harness, который подключает к агентам сразу два MCP-сервера и
-делает GitHub доступным «под ключ». Облачная часть — официальный удалённый сервер GitHub MCP
-(набор toolsets `all`), локальная — Git-сервер для работы с репозиториями этого компьютера.
-Секретов в пакете нет: токен читается из переменной окружения, путь к Python — из dsh-хоума.
+Конфигурационный пакет DeepSeek Harness, который подключает к агентам GitHub «под ключ» и
+локальный Git-сервер. GitHub-часть — официальный сервер GitHub MCP: основной путь — локальный
+бинарник (`$DSH_HOME/bin/github-mcp-server`, toolset `github`, принимает fine-grained PAT),
+облачный эндпоинт `api.githubcopilot.com` оставлен как запасной `github-cloud`. Секретов в пакете
+нет: токен и список toolsets читаются из переменных окружения, путь к Python — из dsh-хоума.
 
 ### Что появляется у агента
 
 | Инструменты | Источник | Что умеют |
 |---|---|---|
-| `mcp__github__*` | официальный удалённый GitHub MCP Server | репозитории и файлы, issues, pull request'ы, Actions/CI, code scanning, gists, обсуждения, проекты, пользователи и организации |
+| `mcp__github__*` | официальный GitHub MCP Server локально (бинарник v2.1.0 в `$DSH_HOME/bin`) | репозитории и файлы, issues, pull request'ы, Actions/CI, code scanning, gists, обсуждения, проекты, пользователи и организации — до 91 инструмента при `GITHUB_TOOLSETS=all` |
+| `mcp__github-cloud__*` | облачный эндпоинт `api.githubcopilot.com` (все toolsets) | тот же набор; подключается только при доступе к Copilot-эндпоинту, иначе остаётся офлайн |
 | `mcp__git__*` | локальный `mcp-server-git` из venv `~/.dsh/venvs/mcp-git` | `status`, `diff`, `add`, `commit`, ветки, `checkout`, `merge`, `log`, `show`, `remote` — операции в локальных репозиториях |
 
 Связка живёт без присмотра: потерю связи сервер пересоединяется сам (0,5 → 30 с, до 10 попыток),
@@ -62,8 +64,9 @@ python -m venv ~/.dsh/venvs/mcp-git
 ```mermaid
 flowchart LR
     A[Агент DSH] --> B[dsh-mcp-client]
-    B -->|streamable-http + Bearer PAT| C[GitHub MCP Server · удалённый]
+    B -->|stdio + PAT из env| C[GitHub MCP Server · локальный бинарник]
     C --> D[GitHub API: repos · issues · PR · Actions · security]
+    B -.->|streamable-http, запасной| G[GitHub MCP Server · облако]
     B -->|stdio JSON-RPC| E[Git MCP Server · локальный venv]
     E --> F[Локальные репозитории: commit · diff · ветки]
 ```
@@ -72,17 +75,18 @@ flowchart LR
 
 ## English
 
-A configuration package for DeepSeek Harness that wires two MCP servers to the agents and makes
-GitHub available out of the box. The cloud part is the official remote GitHub MCP Server (the `all`
-toolsets); the local part is a Git server for operations in repositories on this machine. The package
-keeps no secrets: the token is read from an environment variable, the Python path comes from the
-dsh home.
+A configuration package for DeepSeek Harness that wires GitHub out of the box plus a local Git
+server. The GitHub part is the official GitHub MCP Server: the primary path is a local binary
+(`$DSH_HOME/bin/github-mcp-server`, the `github` toolset, fine-grained PAT friendly) with the cloud
+endpoint kept as the `github-cloud` fallback. The package keeps no secrets: the token and the
+toolsets list are read from environment variables, the Python path comes from the dsh home.
 
 ### What the agent gets
 
 | Tools | Origin | Capabilities |
 |---|---|---|
-| `mcp__github__*` | official remote GitHub MCP Server | repositories and files, issues, pull requests, Actions/CI, code scanning, gists, discussions, projects, users and organizations |
+| `mcp__github__*` | official GitHub MCP Server locally (v2.1.0 binary in `$DSH_HOME/bin`) | repositories and files, issues, pull requests, Actions/CI, code scanning, gists, discussions, projects, users and organizations — up to 91 tools with `GITHUB_TOOLSETS=all` |
+| `mcp__github-cloud__*` | cloud endpoint `api.githubcopilot.com` (all toolsets) | the same set; connects only when the Copilot endpoint is accessible, otherwise stays offline |
 | `mcp__git__*` | local `mcp-server-git` from the `~/.dsh/venvs/mcp-git` venv | `status`, `diff`, `add`, `commit`, branches, `checkout`, `merge`, `log`, `show`, `remote` — operations in local repositories |
 
 The setup runs unattended: a lost connection is re-established automatically
@@ -131,8 +135,9 @@ More: [documentation](../docs/en/mcp-github-universal.md) · [diagram](#diagram)
 ```mermaid
 flowchart LR
     A[DSH agent] --> B[dsh-mcp-client]
-    B -->|streamable-http + Bearer PAT| C[GitHub MCP Server · remote]
+    B -->|stdio + PAT from env| C[GitHub MCP Server · local binary]
     C --> D[GitHub API: repos · issues · PR · Actions · security]
+    B -.->|streamable-http, fallback| G[GitHub MCP Server · cloud]
     B -->|stdio JSON-RPC| E[Git MCP Server · local venv]
     E --> F[Local repositories: commit · diff · branches]
 ```

@@ -1,12 +1,28 @@
-# Универсальный доступ к GitHub по MCP: официальный удалённый GitHub MCP Server
-# (все toolsets) + локальный Git MCP Server из venv в $DSH_HOME/venvs.
-# Секреты не хранятся в пакете: токен берётся из переменной окружения.
+# Универсальный доступ к GitHub по MCP.
+# Основной путь — локальный официальный сервер github-mcp-server (бинарник в $DSH_HOME/bin,
+# понимает fine-grained PAT): он и занимает toolset "github".
+# Облачный сервер api.githubcopilot.com оставлен как "github-cloud": на хостах без
+# Copilot-доступа он отвечает 403 «forbidden: access denied» на любой класс токенов
+# (проверено на gho_- и fine-grained PAT) и остаётся offline благодаря failOnStartupError: false.
+# Секреты не хранятся в пакете: токен и GITHUB_TOOLSETS читаются из переменных окружения.
 - insert:
-    # Облачный GitHub: репозитории, файлы, issues, PR, Actions, code security, gists...
-    - id: mcp-github
+    # Локальный официальный GitHub MCP Server: репозитории, файлы, issues, PR, Actions...
+    - id: mcp-github-local
       name: '@deepseek-ai/dsh-mcp-client'
       config:
         serverName: github
+        transport: stdio
+        command: !!js dshHomePath('bin/github-mcp-server')
+        args: ['stdio']
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+
+    # Облачный GitHub (все toolsets): подключается только там, где аккаунту доступен
+    # Copilot-эндпоинт; иначе остаётся offline и не мешает локальному серверу.
+    - id: mcp-github-cloud
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: github-cloud
         transport: streamable-http
         url: https://api.githubcopilot.com/mcp/x/all
         toolCallTimeoutMs: 120000
