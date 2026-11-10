@@ -851,7 +851,7 @@ function apply(ctx, rawConfig) {
 				},
 				output: {
 					schema: { type: "object", additionalProperties: false, required: ["hits", "count"], properties: { hits: { type: "array", items: { type: "string" } }, count: { type: "integer" } } },
-					render: (_args, value) => [value.count === 0 ? "Похожего в памяти нет." : value.hits.join("\n")]
+					render: (_args, value) => [{ type: "text", text: value.count === 0 ? "Похожего в памяти нет." : value.hits.join("\n") }]
 				},
 				async execute(args, exec) {
 					const session = exec?.agent?.session;
@@ -880,7 +880,7 @@ function apply(ctx, rawConfig) {
 				},
 				output: {
 					schema: { type: "object", additionalProperties: false, required: ["id", "saved"], properties: { id: { type: "string" }, saved: { type: "boolean" } } },
-					render: (_args, value) => [value.saved ? `✅ Сохранено в общую память (${value.id})` : "❌ Не сохранено"]
+					render: (_args, value) => [{ type: "text", text: value.saved ? `✅ Сохранено в общую память (${value.id})` : "❌ Не сохранено" }]
 				},
 				async execute(args) {
 					const id = addChunk(args.kind === "fact" ? "fact" : "doc", args.text, "agent", "", 0);
@@ -910,7 +910,7 @@ function apply(ctx, rawConfig) {
 				},
 				output: {
 					schema: { type: "object", additionalProperties: false, required: ["text"], properties: { text: { type: "string" } } },
-					render: (_args, value) => [value.text]
+					render: (_args, value) => [{ type: "text", text: value.text }]
 				},
 				async execute(args) {
 					if (args.approve !== undefined) store.routineApprove(args.approve);
@@ -935,7 +935,7 @@ function apply(ctx, rawConfig) {
 				},
 				output: {
 					schema: { type: "object", additionalProperties: false, required: ["analysis"], properties: { analysis: { type: "string" } } },
-					render: (_args, value) => [value.analysis]
+					render: (_args, value) => [{ type: "text", text: value.analysis }]
 				},
 				async execute(args) {
 					const md = runWeeklyAnalysis(Date.now());
@@ -949,7 +949,7 @@ function apply(ctx, rawConfig) {
 				parameters: { type: "object", additionalProperties: false, properties: {} },
 				output: {
 					schema: { type: "object", additionalProperties: false, required: ["profile"], properties: { profile: { type: "string" } } },
-					render: (_args, value) => [value.profile]
+					render: (_args, value) => [{ type: "text", text: value.profile }]
 				},
 				async execute() {
 					return { profile: styleProfileText(style) };
