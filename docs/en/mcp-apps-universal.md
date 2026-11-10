@@ -1,4 +1,4 @@
-# mcp-apps-universal — universal MCP connector for Windows applications
+﻿# mcp-apps-universal — universal MCP connector for Windows applications
 
 **RU** · [English](#english) · [Русский](../ru/mcp-apps-universal.md)
 
@@ -55,3 +55,13 @@ without breaking the dsh core.
 - All paths live under `~/.dsh` — outside the dsh core, surviving updates.
 
 Second-wave backlog templates — see `packages/mcp-apps-universal/README.md`.
+## Second wave: custom servers (EN)
+
+Wave 2 adds custom-built servers for installed apps without ready-made github MCP:
+
+- **WinRAR** — mcp-custom/winrar/server.py: list/extract/create/test/delete via Rar.exe/UnRAR.exe, cp866 decode. Tools: mcp__winrar__winrar_list, winrar_extract, winrar_create, winrar_test, winrar_delete. Live-tested: list and test on a probe archive.
+- **Yandex Disk** — mcp-custom/yadisk/server.py: list/read/search/status over the local synced folder (YANDEX_DISK_ROOT → D:\Яндекс.Диск). Tools: mcp__yadisk__yadisk_list, yadisk_read, yadisk_search, yadisk_status.
+- **Microsoft SQL Server** (RichardHan) — deferred: pymssql needs a SQL login+password while LocalDB defaults to integrated auth over named pipe. Once a login exists unlock mcp-mssql.
+- Backlog wave 3: Obsidian markdown-vault (ready — pvliesdonk), Windows Edge (chrome-devtools-mcp, node-based), SketchUp 2026 (Ruby COM/API), Foxit PDF Editor (COM), Navisworks 2026 (COM).
+
+Paths: venvs under ~/.dsh/venvs/app-{office,excel,gimp,winrar,yadiskfs}, repo clones under ~/.dsh/apps-mcp/{OfficeMCP,excel-mcp-server,GimpMCP,mssql_mcp_server}; custom servers in ~/.dsh/mcp-custom/{winrar,yadisk}. All outside the dsh core, surviving its updates.
