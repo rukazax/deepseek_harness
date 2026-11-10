@@ -83,3 +83,54 @@
           YANDEX_DISK_ROOT: !!js "(process.env.YANDEX_DISK_ROOT ?? 'D:\\\\Яндекс.Диск')"
         toolCallTimeoutMs: 60000
         failOnStartupError: false
+
+    # PDF (Foxit PDF Editor / Adobe Acrobat COM + pypdf) — свой собственный.
+    # Foxit / Acrobat не имеют готовых MCP; пакет открывает PDF-файлы, извлекает текст,
+    # склеивает/разбивает/считает страницы и запускает Foxit по COM.
+    - id: mcp-pdf
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: pdf
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-pdf/Scripts/python.exe
+        args: ['C:/Users/AMNovez/.dsh/mcp-custom/pdf/server.py']
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+
+    # SketchUp 2026 (COM automation: Skp.Application) — свой собственный.
+    # Готовых под SketchUp нет; пакет достёгивает модель и отправляет Ruby (COM bridged).
+    - id: mcp-sketchup
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: sketchup
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-sketchup/Scripts/python.exe
+        args: ['C:/Users/AMNovez/.dsh/mcp-custom/sketchup/server.py']
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+
+    # Autodesk Navisworks 2026 (COM automation: Navisworks.Application) — свой собственный.
+    - id: mcp-navisworks
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: navisworks
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-navisworks/Scripts/python.exe
+        args: ['C:/Users/AMNovez/.dsh/mcp-custom/navisworks/server.py']
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
+
+    # Obsidian vault — свой собственный (облегчённый, без векторного поиска):
+    # read/write/delete/list/search по телу заметок + filename-based поиск.
+    # (memory-hub уже мониторит vault автоматически; здесь агенту напрямую для управления).
+    - id: mcp-vault
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: vault
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-vault/Scripts/python.exe
+        args: ['C:/Users/AMNovez/.dsh/mcp-custom/vault/server.py']
+        env:
+          OBSIDIAN_VAULT: !!js dshHomePath('obsidian/vault')
+        toolCallTimeoutMs: 60000
+        failOnStartupError: false
