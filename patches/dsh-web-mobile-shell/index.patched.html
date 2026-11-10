@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./favicon-dark.svg" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" media="(prefers-color-scheme: light)" />
+    <title>DeepSeek Harness</title>
+    <script type="module" crossorigin src="./assets/index-BXV-oxvX.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/vendor-DcuzkuQH.js">
+    <link rel="stylesheet" crossorigin href="./assets/vendor-DV2921Zo.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-BNyAYEM7.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  <!-- dsh mobile shell patch (swipe/tap) -->
+<script>
+      /* ── dsh mobile shell patch (injected; no server restart needed) ─────────
+       * 1. Edge-swipe on a touch device toggles the sidebar rail (open/close).
+       * 2. Tapping an empty spot of the collapsed rail expands the sidebar.
+       *    (Self-heal re-tap removed 2026-11-10: whenever aria-expanded stayed
+       *     false - e.g. on panel-style triggers like the settings gear - it
+       *     re-clicked up to 2 more times and shielded outside taps, toggling
+       *     panels visibly: the mobile "flicker". Restore only with a DOM-gated
+       *     single retry that checks the actual menu element.)
+       * Scroll-fix 2026-11-10: thresholds tightened (true left edge <= 24px to
+       * open, 110px and 3:1 horizontal ratio, close only from inside the sidebar)
+       * so ordinary chat scrolling can no longer toggle the panel.
+       * Harmless on desktop pointers: gestures attach only to coarse pointers.
+       * ───────────────────────────────────────────────────────────────────── */
+      (function () {
+        "use strict";
+        if (window.__DSH_MOBILE_PATCH__) return;
+        window.__DSH_MOBILE_PATCH__ = true;
+        function coarse() {
+          return window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        }
+        function frameEl() {
+          var q = document.querySelector("#root [data-sidebar-collapsed]");
+          if (q) return q;
+          var bottom = document.querySelector("#root [data-shell-bottom]");
+          return bottom && bottom.parentElement ? bottom.parentElement : null;
+        }
+        function sidebarCol(frame) {
+          return frame ? frame.firstElementChild : null;
+        }
+        function sidebarRoot(frame) {
+          var col = sidebarCol(frame);
+          if (!col) return null;
+          var row = col.querySelector("[data-window-drag]");
+          return row ? (row.parentElement || col) : (col.firstElementChild || col);
+        }
+        /* The rail toggle lives inside the [data-window-drag] header row. */
+        function findToggle(root) {
+          if (!root) return null;
+          var rows = root.querySelectorAll("[data-window-drag]");
+          for (var i = rows.length - 1; i >= 0; i--) {
+            var btns = rows[i].querySelectorAll("button");
+            for (var j = btns.length - 1; j >= 0; j--) {
+              var t = (btns[j].getAttribute("aria-label") || "") + " " + (btns[j].textContent || "");
+              if (/боков|sidebar|侧边栏/i.test(t)) return btns[j];
+            }
+          }
+          var hdr = rows[rows.length - 1];
+          return hdr ? hdr.querySelector("button") : null;
+        }
+        function currentFrameState() {
+          /* {frame, railMode, expanded} — railMode: 56px collapsed rail visible. */
+          var frame = frameEl(), col = sidebarCol(frame);
+          if (!frame || !col) return null;
+          var w = col.getBoundingClientRect().width;
+          return {
+            frame: frame,
+            railMode: frame.hasAttribute("data-sidebar-collapsed") && w > 0 && w <= 64,
+            expanded: !frame.hasAttribute("data-sidebar-collapsed") && w >= 100
+          };
+        }
+        function toggleSidebar() {
+          var btn = findToggle(sidebarRoot(frameEl()));
+          if (btn) { btn.click(); return true; }
+          return false;
+        }
+        function isInteractive(el) {
+          var n = el;
+          while (n && n.nodeType === 1) {
+            if (n.matches("button,a,input,textarea,select,[role=menuitem],[role=button],[aria-haspopup]")) return true;
+            n = n.parentElement;
+          }
+          return false;
+        }
+
+        /* ── 1 & 2: touch gestures ── */
+        var startX = 0, startY = 0, tracking = false, fired = false, startedExpanded = false, startTarget = null;
+        document.addEventListener("touchstart", function (e) {
+          if (!coarse() || e.touches.length !== 1) return;
+          tracking = true; fired = false;
+          startTarget = e.touches[0].target;
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          var s = currentFrameState();
+          startedExpanded = !!(s && s.expanded);
+        }, { passive: true });
+        document.addEventListener("touchmove", function (e) {
+          if (!tracking || fired || e.touches.length !== 1) return;
+          var dx = e.touches[0].clientX - startX;
+          var dy = e.touches[0].clientY - startY;
+          /* strict (scroll-fix 2026-11-10): a deliberate horizontal gesture,
+           * not a scroll flick with drift */
+          if (Math.abs(dx) < 110 || Math.abs(dx) < 3 * Math.abs(dy)) return;
+          var s = currentFrameState();
+          if (!startedExpanded) {
+            /* open: rightward swipe starting at the true left edge only */
+            if (dx < 0 || startX > 24) return;
+            fired = true;
+            if (!s || s.railMode || !s.frame) toggleSidebar();
+          } else {
+            /* close: leftward swipe starting inside the expanded sidebar only */
+            if (dx > 0) return;
+            var st = (startTarget instanceof Element) ? startTarget : null;
+            var root = sidebarRoot(s && s.frame);
+            if (!root || !st || !root.contains(st)) return;
+            fired = true;
+            if (s && s.expanded) toggleSidebar();
+          }
+        }, { passive: true });
+        document.addEventListener("touchend", function () { tracking = false; }, { passive: true });
+        document.addEventListener("touchcancel", function () { tracking = false; }, { passive: true });
+
+        /* Tap on an empty spot of the collapsed rail expands the sidebar. */
+        document.addEventListener("click", function (e) {
+          if (!coarse()) return;
+          var t = e.target instanceof Element ? e.target : null;
+          if (!t || !t.isConnected || isInteractive(t)) return;
+          var s = currentFrameState();
+          if (!s || !s.railMode) return;
+          var root = sidebarRoot(s.frame);
+          if (!root || !root.contains(t)) return;
+          var btn = findToggle(root);
+          if (btn) { e.stopPropagation(); btn.click(); }
+        }, true);
+
+      })();
+
+</script>
+</body>
+</html>
