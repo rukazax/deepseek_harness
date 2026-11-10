@@ -1,4 +1,4 @@
-# mcp-apps-universal — универсальный MCP-соединитель приложений Windows
+﻿# mcp-apps-universal — универсальный MCP-соединитель приложений Windows
 
 **RU** · [English](../en/mcp-apps-universal.md)
 
@@ -58,3 +58,13 @@
 - Все пути в `~/.dsh` — вне ядра dsh, переживают обновления.
 
 Состояние второй волны (шаблоны backfill) — см. `README.md packages/mcp-apps-universal/README.md`.
+## Second wave: собственные серверы (RU)
+
+Wave 2: добавлены самописные серверы для приложений, под которые на GitHub ready-made нет:
+
+- **WinRAR** — mcp-custom/winrar/server.py: list/extract/create/test/delete через Rar.exe/UnRAR.exe, cp866-декодирование. Инструменты: mcp__winrar__winrar_list, winrar_extract, winrar_create, winrar_test, winrar_delete. Проверено: list и test на тестовом архиве возвращают содержимое.
+- **Яндекс.Диск** — mcp-custom/yadisk/server.py: list/read/search/status поверх локальной зеркальной папки (YANDEX_DISK_ROOT → D:\Яндекс.Диск). Инструменты: mcp__yadisk__yadisk_list, yadisk_read, yadisk_search, yadisk_status.
+- **Microsoft SQL Server** (RichardHan) — отложен: для pymssql нужен SQL-логин с паролем; LocalDB по умолчанию работает только через integrated auth (named pipe). Как сделан SQL-логин — row mcp-mssql станет видимым (currently disabled via !!js) .
+- Backlog wave 3: Obsidian markdown-vault (готовый — pvliesdonk), Windows Edge (chrome-devtools-mcp, node-based), SketchUp 2026 (Ruby COM/API), Foxit PDF Editor (COM), Navisworks 2026 (COM).
+
+Пути: venv — ~/.dsh/venvs/app-{office,excel,gimp,winrar,yadiskfs}, клон репо — ~/.dsh/apps-mcp/{OfficeMCP,excel-mcp-server,GimpMCP,mssql_mcp_server}; свои серверы в ~/.dsh/mcp-custom/{winrar,yadisk}. Всё вне ядра dsh — переживает его обновления.
