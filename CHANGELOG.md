@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-11 — Глобальное правило: учитывать ссылки для скачивания из переписок проекта
+
+RU: ссылки на скачивание в переписке (Яндекс.Диск, disk.360, Sarex и аналоги) признаны полноправными исходными материалами проекта: собираются в границах изучаемого проекта и периода, каждая ссылка отрабатывается (скачать, изучить, зафиксировать дату/версию), битые/недоступные фиксируются явно, материалы сверяются с локальными копиями (берётся свежая версия), скачанное хранится с пометкой источника. Правило внесено в `AGENTS.md` (RU/EN, разделы 2) и описано на страницах `docs/{ru,en}/correspondence-links-rule.md`; локальная копия — `~/.dsh/AGENTS.md`.
+
+EN: download links in correspondence (Yandex.Disk, disk.360, Sarex, alike) are now first-class project source materials: collected within the studied project and period, every link processed (downloaded, reviewed, date/version recorded), broken/inaccessible links recorded explicitly, materials reconciled with local copies (freshest wins), downloads stored with a source note. Added to `AGENTS.md` (RU/EN, section 2) and documented in `docs/{ru,en}/correspondence-links-rule.md`.
+
 ## 2026-11-10 — mcp-apps-universal: универсальный MCP-соединитель приложений Windows
 
 RU: собран инвентарь всех установленных приложений (144 позиции из реестра + AppxStore + каталоги). Первая волна подключения готовых MCP: Office COM (Word/Excel/PPT/Outlook — запись в ОТКРЫТЫЕ документы, pywin32/fastmcp), Excel без Microsoft Excel (openpyxl), GIMP 3 (Script-Fu bridge с autostart headless), Microsoft SQL Server (pymssql, TCP+логин/пароль, LocalDB — отложено до SQL-логина). Каждый сервер запускается из собственного venv в `~/.dsh/venvs/app-*`, клон репозитория — `~/.dsh/apps-mcp`, не из ядра dsh. Клонируются с GitHub и деплоятся в venv: OfficeMCP (131★), excel-mcp-server haris-musa (4.3k★), GimpMCP SavithOnline, mssql_mcp_server RichardHan (404★). Двуязычный README пакета, docs/ru/en, схемы, строка в README и CHANGELOG. Вторая волна (backlog): Yandex Disk (готовый — Antiloop-git 5★), Obsidian (готовый — pvliesdonk 38★), Chrome-devtools/Microsoft Edge, SketchUp, Navisworks, Foxit/PDF, WinRAR; пустые — alert в профиль.
