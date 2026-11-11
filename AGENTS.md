@@ -17,7 +17,20 @@
 Исключения: секреты/персональные данные в пакете; явная отмена пользователя; техническая невозможность
 (фиксируется причина).
 
-### 2. Оформление
+### 2. Учёт ссылок для скачивания из переписок проекта
+
+> **При изучении и анализе материалов по проекту обязательно учитывать информацию, которую
+> предоставляют ссылки для скачивания из переписок в рамках изучаемого проекта и периода.**
+
+Ссылки на скачивание в переписке (Яндекс.Диск, disk.360, Sarex и аналоги) — полноправные исходные
+материалы наравне с вложениями писем и локальными папками: собираются только в границах изучаемого
+проекта и периода, каждая отрабатывается (скачать, изучить, зафиксировать дату/версию), битые и
+недоступные ссылки фиксируются явно, материалы сверяются с локальными копиями (берётся свежая версия),
+скачанное хранится с пометкой источника (письмо/дата/ссылка). Полная формулировка — на страницах
+[`docs/ru/correspondence-links-rule.md`](docs/ru/correspondence-links-rule.md) и
+[`docs/en/correspondence-links-rule.md`](docs/en/correspondence-links-rule.md).
+
+### 3. Оформление
 
 1. Каждый пакет — в `packages/<name>` по контракту DSH: `package.json` (`dsh.bundle.patch`),
    `cordis.patch.yml`, `README.md`, `LICENSE`.
@@ -28,7 +41,7 @@
    где они помогают навигации.
 5. Секреты, токены, cookie и персональные данные в репозиторий не попадают.
 
-### 3. Порядок
+### 4. Порядок
 
 1. Разработать и проверить пакет (`py_compile`, `node --check`), убедиться в отсутствии секретов.
 2. Обновить `CHANGELOG.md`.
@@ -52,7 +65,20 @@ Previously created artefacts are backfilled into the repository without falling 
 Exceptions: secrets/personal data in the package; explicit user cancellation; technical impossibility
 (reason recorded).
 
-### 2. Format
+### 2. Considering download links from project correspondence
+
+> **When studying and analysing project materials, always take into account the information provided
+> by download links found in the correspondence of the project and period being studied.**
+
+Download links in correspondence (Yandex.Disk, disk.360, Sarex and alike) are first-class source
+materials alongside e-mail attachments and local folders: they are collected only within the studied
+project and period, every link is processed (downloaded, reviewed, its date/version recorded), broken
+or inaccessible links are explicitly recorded, materials are reconciled with local copies (the freshest
+version wins), and everything downloaded is stored with a source note (message/date/link). The full
+wording lives in [`docs/en/correspondence-links-rule.md`](docs/en/correspondence-links-rule.md) and
+[`docs/ru/correspondence-links-rule.md`](docs/ru/correspondence-links-rule.md).
+
+### 3. Format
 
 1. Each package lives in `packages/<name>` following the DSH contract: `package.json` (`dsh.bundle.patch`),
    `cordis.patch.yml`, `README.md`, `LICENSE`.
@@ -63,7 +89,7 @@ Exceptions: secrets/personal data in the package; explicit user cancellation; te
    where they aid navigation.
 5. Secrets, tokens, cookies and personal data are never committed.
 
-### 3. Procedure
+### 4. Procedure
 
 1. Build and verify the package (`py_compile`, `node --check`), confirm no secrets.
 2. Update `CHANGELOG.md`.
