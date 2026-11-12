@@ -1,0 +1,15 @@
+# MCP для Sarex (sarex.dsinv.ru): статусы задач, уведомления, произвольные /api/* запросы,
+# интерактивный SSO-вход (Playwright + Edge, подтверждение 2FA на телефоне).
+# Сервер живёт в ~/.dsh/mcp-custom/sarex (вне ядра dsh — переживает его обновления).
+# Учётные данные: ~/.dsh/_secrets/credentials.json (ключ "sarex"), в репозиторий не попадают.
+# Скриншоты/выгрузки задач дополнительно лежат в папке объекта «07. Задачи Sarex».
+- insert:
+    - id: mcp-sarex
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: sarex
+        transport: stdio
+        command: C:/Users/AMNovez/.dsh/venvs/app-sarex/Scripts/python.exe
+        args: ['C:/Users/AMNovez/.dsh/mcp-custom/sarex/server.py']
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
