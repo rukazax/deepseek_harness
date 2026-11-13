@@ -48,7 +48,7 @@ window.__ModuleLoader__.load({
         h('span', { style: { ...css.dot, background: fresh ? 'var(--dsw-alias-success, #3fb27f)' : 'var(--dsw-alias-border, #8a93a6)' } }),
         h('span', { style: { ...css.icon }, 'aria-hidden': true }, '🧠'),
         h('span', { style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
-          `память: ${fmtInt(stats?.chunks)} чанк. · ${fmtInt(stats?.routines)} рут. · экономия ≈ ${fmtInt(stats?.estimatedTokensSaved)} ток`),
+          `${fmtInt(stats?.chunks)} чанк. · ${fmtInt(stats?.routines)} рут. · экономия ≈ ${fmtInt(stats?.estimatedTokensSaved)} ток`),
         h('button', {
           style: { all: 'unset', ...css.link, fontSize: 12, whiteSpace: 'nowrap' },
           onClick: onOpen,
