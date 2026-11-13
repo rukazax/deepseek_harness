@@ -1,5 +1,19 @@
 # Changelog — dsh-memory-hub
 
+## 0.1.3 — 2026-11-13
+
+### Changed / Изменено
+
+- **RU:** информер под композером больше не префиксуется словом «память:» — строка состояния теперь `🧠 N чанк. · M рут. · экономия ≈ K ток`. Иконка, точка активности и кнопка «дашборд ↗» не изменились.
+- **EN:** the composer informer no longer prefixes its status line with "memory:"; it now reads `🧠 N chunks · M routines · ≈ K tokens saved`. The icon, activity dot and the "dashboard ↗" button are unchanged.
+- **RU:** пример строки состояния в README приведён к новому виду.
+- **EN:** the README status-line example is updated to match.
+
+### Verified / Проверено
+
+- **RU:** `node --check client.js` проходит; правка синхронно применена к профильной копии `~/.dsh/profiles/web/node_modules/dsh-memory-hub`.
+- **EN:** `node --check client.js` passes; the change was applied to the profile copy at `~/.dsh/profiles/web/node_modules/dsh-memory-hub` as well.
+
 ## 0.1.2 — 2026-11-10
 
 ### Fixed / Исправлено
