@@ -28,14 +28,15 @@ profile/node_modules). Модули профиля резолвятся РАНЬ
 
 2. Проверка профиля инструментом
    - Запусти: D:\DeepSeek\PC_Admin\dsh-profile-doctor\run-doctor.cmd --profile desktop --json
-   - Если инструмента нет — проверь вручную: profile\package.json (есть ли @deepseek-ai/* в dependencies),
-     profile\node_modules\@deepseek-ai (есть ли каталоги), profile\compatibility.json (существует ли),
+   - Если инструмента нет — проверь вручную в %USERPROFILE%\.dsh\profiles\<профиль>\:
+     package.json (есть ли @deepseek-ai/* в dependencies), node_modules\@deepseek-ai (есть ли каталоги),
+     compatibility.json (существует ли),
      dsh.profile.bundles (нет ли dsh-experimental-schedule-bundle и dsh-experimental-agent-team-profile),
      engines.dsh у сторонних плагинов.
    - Каждый [!!] из отчёта — отдельная причина падения, перечисли их в ответе.
 
 3. Подготовка откатa (обязательно до правок)
-   - Скопируй в profile\_backup-<дата-время>\ файлы: package.json, pnpm-lock.yaml, cordis.patch.yml,
+   - Скопируй в %USERPROFILE%\.dsh\profiles\<профиль>\_backup-<дата-время>\ файлы: package.json, pnpm-lock.yaml, cordis.patch.yml,
      compatibility.json. Это единственный источник откатa; данные сессий не трогай.
 
 4. Починка
@@ -54,9 +55,9 @@ profile/node_modules). Модули профиля резолвятся РАНЬ
      разрешению пользователя.
 
 Инвариант, который должен остаться после работы:
-- в profile\package.json нет зависимостей @deepseek-ai/* (официальные бандлы берутся из установки);
-- profile\node_modules\@deepseek-ai пуст или отсутствует;
-- profile\compatibility.json отсутствует;
+- в package.json профиля нет зависимостей @deepseek-ai/* (официальные бандлы берутся из установки);
+- node_modules\@deepseek-ai профиля пуст или отсутствует;
+- compatibility.json в профиле отсутствует;
 - в dsh.profile.bundles нет выведенных бандлов;
 - у сторонних плагинов объявлен engines.dsh (например >=0.2.2-rc.1 <0.3.0-0);
 - cordis.patch.yml не потерял ни одного ряда настроек.
@@ -64,7 +65,7 @@ profile/node_modules). Модули профиля резолвятся РАНЬ
 Ограничения:
 - ядро DSH (Program Files\DeepSeek Harness, app.asar, node_modules внутри установки) не изменять и
   pnpm внутри него не запускать;
-- конфигурация — только в профиле (~/.dsh/profiles/<profile>/cordis.patch.yml);
+- конфигурация — только в профиле (%USERPROFILE%\.dsh\profiles\<профиль>\cordis.patch.yml);
 - не удалять сессии, не сбрасывать настройки, не выдавать исключения совместимости без разрешения;
 - всё делать через файлы профиля и официальные инструменты (plugin_manager, dsh-profile-doctor).
 
@@ -78,7 +79,7 @@ profile/node_modules). Модули профиля резолвятся РАНЬ
 ```text
 DSH не стартует после обновления: «startup failed: 1 required plugin did not activate». Вылечи профиль,
 не трогая ядро. Проверь свежий %APPDATA%\@deepseek-ai\dsh-desktop\logs\crash-*.log, затем
-D:\DeepSeek\PC_Admin\dsh-profile-doctor\run-doctor.cmd --json. Сделай бэкап profile\package.json,
+D:\DeepSeek\PC_Admin\dsh-profile-doctor\run-doctor.cmd --json. Сделай бэкап package.json профиля,
 pnpm-lock.yaml, cordis.patch.yml, compatibility.json и запусти тот же скрипт с --fix. Инвариант:
 в профиле нет копий @deepseek-ai/* (ни в dependencies, ни в node_modules), нет compatibility.json,
 нет выведенных бандлов, у сторонних плагинов есть engines.dsh. Затем перезапусти приложение и
