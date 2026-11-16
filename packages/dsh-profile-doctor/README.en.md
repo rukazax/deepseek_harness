@@ -116,6 +116,10 @@ With `--fix` the same report is recomputed after the repairs, so a second run si
 
 An exemption in `compatibility.json` is the last resort: it authorises known-incompatible code. That is exactly why the doctor deletes the file.
 
+### Ready-to-paste prompt for a fresh session
+
+When the app already fails to start and you need an agent to walk the whole path: [prompts/heal-profile-isolation.en.md](prompts/heal-profile-isolation.en.md) (RU — [prompts/heal-profile-isolation.md](prompts/heal-profile-isolation.md)). The file carries two versions: a step-by-step one and a one-line one.
+
 ---
 
 ## 🧩 What stays in a profile
