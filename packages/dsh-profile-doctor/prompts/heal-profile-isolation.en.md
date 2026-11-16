@@ -29,14 +29,15 @@ Proceed step by step.
 
 2. Check the profile
    - Run: D:\DeepSeek\PC_Admin\dsh-profile-doctor\run-doctor.cmd --profile desktop --json
-   - Without the tool, check by hand: profile\package.json (@deepseek-ai/* in dependencies?),
-     profile\node_modules\@deepseek-ai (directories present?), profile\compatibility.json (exists?),
+   - Without the tool, check by hand inside %USERPROFILE%\.dsh\profiles\<profile>\:
+     package.json (@deepseek-ai/* in dependencies?), node_modules\@deepseek-ai (directories present?),
+     compatibility.json (exists?),
      dsh.profile.bundles (any dsh-experimental-schedule-bundle or dsh-experimental-agent-team-profile?),
      engines.dsh on third-party plugins.
    - Every [!!] in the report is a separate failure cause; list them in the answer.
 
 3. Prepare the rollback (mandatory before edits)
-   - Copy into profile\_backup-<date-time>\: package.json, pnpm-lock.yaml, cordis.patch.yml,
+   - Copy into %USERPROFILE%\.dsh\profiles\<profile>\_backup-<date-time>\: package.json, pnpm-lock.yaml, cordis.patch.yml,
      compatibility.json. This is the only rollback source; never touch session data.
 
 4. Repair
@@ -56,9 +57,9 @@ Proceed step by step.
      explicit permission.
 
 Invariant to leave behind:
-- profile\package.json has no @deepseek-ai/* dependencies (official bundles come from the installation);
-- profile\node_modules\@deepseek-ai is empty or absent;
-- profile\compatibility.json is absent;
+- the profile package.json has no @deepseek-ai/* dependencies (official bundles come from the installation);
+- the profile node_modules\@deepseek-ai is empty or absent;
+- the profile compatibility.json is absent;
 - dsh.profile.bundles holds no retired bundles;
 - third-party plugins declare engines.dsh (for example >=0.2.2-rc.1 <0.3.0-0);
 - cordis.patch.yml lost none of its configuration rows.
@@ -66,7 +67,7 @@ Invariant to leave behind:
 Constraints:
 - never modify the DSH core (Program Files\DeepSeek Harness, app.asar, node_modules inside the
   installation) and never run pnpm inside it;
-- configuration lives only in the profile (~/.dsh/profiles/<profile>/cordis.patch.yml);
+- configuration lives only in the profile (%USERPROFILE%\.dsh\profiles\<profile>\cordis.patch.yml);
 - do not delete sessions, do not reset settings, do not grant compatibility exemptions without permission;
 - use profile files and official tools only (plugin_manager, dsh-profile-doctor).
 
