@@ -6,7 +6,9 @@
   "exports": {
     "./cordis.patch.yml": "./cordis.patch.yml"
   },
-  "files": ["cordis.patch.yml"],
+  "files": [
+    "cordis.patch.yml"
+  ],
   "author": "rukazax",
   "license": "MIT",
   "repository": {
@@ -15,6 +17,15 @@
     "directory": "packages/mcp-sarex"
   },
   "homepage": "https://github.com/rukazax/deepseek_harness/tree/main/packages/mcp-sarex",
-  "bugs": { "url": "https://github.com/rukazax/deepseek_harness/issues" },
-  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+  "bugs": {
+    "url": "https://github.com/rukazax/deepseek_harness/issues"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+  }
 }
