@@ -116,6 +116,10 @@ run-doctor.cmd --fix
 
 Исключение `compatibility.json` — последнее средство: оно разрешает заведомо несовместимый код. Доктор удаляет файл именно поэтому.
 
+### Готовый промт для новой сессии
+
+Если приложение уже не стартует и нужен агент, который пройдёт путь целиком: [prompts/heal-profile-isolation.md](prompts/heal-profile-isolation.md) (EN — [prompts/heal-profile-isolation.en.md](prompts/heal-profile-isolation.en.md)). В файле две версии — подробная по шагам и короткая одной строкой.
+
 ---
 
 ## 🧩 Что остаётся в профиле
