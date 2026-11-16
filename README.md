@@ -8,7 +8,7 @@
   <img alt="license" src="https://img.shields.io/badge/license-MIT-blue.svg">
   <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522.19-339933.svg">
   <img alt="python" src="https://img.shields.io/badge/python-3.12-3776AB.svg">
-  <img alt="dsh" src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.1--rc.2-4B6BFB.svg">
+  <img alt="dsh" src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.2--rc.3-4B6BFB.svg">
   <img alt="languages" src="https://img.shields.io/badge/docs-RU%20%7C%20EN-8A2BE2.svg">
 </p>
 
@@ -37,6 +37,7 @@ MCP-протокол и дать агентам единый, предсказу
 | [`dsh-locale-ru`](packages/dsh-locale-ru) | Русский язык веб-интерфейса: пункт «Русский» в настройках и словари для всех клиентских пакетов, откат `ru → en` | Node.js (ESM), без сборки |
 | [`dsh-auto-translate`](packages/dsh-auto-translate) | Опциональный автоперевод всех окон и страниц DSH сторонними сервисами в браузере, по умолчанию выключен: MyMemory/Google/Lingva без ключа, DeepL по ключу; выключение возвращает оригиналы; ноль токенов модели | Node.js (ESM), без сборки |
 | [`dsh-sync`](packages/dsh-sync) | Двусторонняя синхронизация истории сессий DSH между Windows-установкой и Linux-инстансом: sha256, конвертация `cwd` в заголовке, push/pull, бэкапы конфликтов. Утилита, а не плагин: `cordis.patch.yml` не требуется | PowerShell 5.1 + Node.js 22 |
+| [`dsh-profile-doctor`](packages/dsh-profile-doctor) | Профиль DSH отдельно от ядра: находит копии официальных пакетов, устаревшие исключения совместимости и несовместимые плагины, чинит их — обновление ядра больше не ломает старт. Инструмент, а не плагин | Node.js 22 (ESM) |
 
 ## Архитектура
 
@@ -138,6 +139,7 @@ predictable access path — no ad-hoc scripts per task.
 | [`dsh-locale-ru`](packages/dsh-locale-ru) | Russian language for the web UI: a «Русский» entry in settings plus dictionaries for every client package, `ru → en` fallback | Node.js (ESM), no build step |
 | [`dsh-auto-translate`](packages/dsh-auto-translate) | Optional browser-side auto-translation of any window or page of DSH through third-party services, off by default: keyless MyMemory/Google/Lingva, DeepL with a key; switching off restores originals; zero model tokens | Node.js (ESM), no build step |
 | [`dsh-sync`](packages/dsh-sync) | Two-way sync of DSH session history between a Windows install and a Linux instance: sha256, header `cwd` conversion, push/pull, conflict backups. A utility, not a plugin: no `cordis.patch.yml` needed | PowerShell 5.1 + Node.js 22 |
+| [`dsh-profile-doctor`](packages/dsh-profile-doctor) | Keeps a DSH profile isolated from the core: finds copies of official packages, stale compatibility exemptions and incompatible plugins, repairs them — a core update no longer breaks startup. A tool, not a plugin | Node.js 22 (ESM) |
 
 ```mermaid
 flowchart LR
