@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="420" viewBox="0 0 880 420" font-family="Segoe UI, Roboto, Arial, sans-serif">
+  <rect width="880" height="420" fill="#0f1621"/>
+  <text x="32" y="44" fill="#e6edf6" font-size="21" font-weight="600">Профиль DSH отдельно от ядра / Profile isolated from the core</text>
+
+  <rect x="32" y="76" width="380" height="290" rx="14" fill="#141d2b" stroke="#2b3b52"/>
+  <text x="52" y="106" fill="#8fb4ff" font-size="15" font-weight="600">Ядро · установка DSH</text>
+  <text x="52" y="128" fill="#6f8299" font-size="12">resources/app.asar — обновляется целиком</text>
+
+  <rect x="52" y="146" width="340" height="34" rx="8" fill="#1b2739" stroke="#2f4258"/>
+  <text x="66" y="168" fill="#c9d6e6" font-size="13">@deepseek-ai/dsh-session</text>
+  <rect x="52" y="190" width="340" height="34" rx="8" fill="#1b2739" stroke="#2f4258"/>
+  <text x="66" y="212" fill="#c9d6e6" font-size="13">@deepseek-ai/dsh-agent-loop</text>
+  <rect x="52" y="234" width="340" height="34" rx="8" fill="#1b2739" stroke="#2f4258"/>
+  <text x="66" y="256" fill="#c9d6e6" font-size="13">@deepseek-ai/dsh-mcp-client</text>
+  <text x="52" y="300" fill="#4ade80" font-size="12">версия всегда совпадает с ядром</text>
+  <text x="52" y="322" fill="#6f8299" font-size="12">обновление заменяет каталог — и это правильно</text>
+
+  <rect x="468" y="76" width="380" height="290" rx="14" fill="#141d2b" stroke="#2b3b52"/>
+  <text x="488" y="106" fill="#ffd479" font-size="15" font-weight="600">Профиль · пользователь</text>
+  <text x="488" y="128" fill="#6f8299" font-size="12">~/.dsh/profiles/desktop — переживает обновления</text>
+
+  <rect x="488" y="146" width="340" height="34" rx="8" fill="#1b2739" stroke="#2f4258"/>
+  <text x="502" y="168" fill="#c9d6e6" font-size="13">cordis.patch.yml — настройки рядов</text>
+  <rect x="488" y="190" width="340" height="34" rx="8" fill="#1b2739" stroke="#2f4258"/>
+  <text x="502" y="212" fill="#c9d6e6" font-size="13">dsh-memory-hub (link:)</text>
+  <rect x="488" y="234" width="340" height="34" rx="8" fill="#1b2739" stroke="#2f4258"/>
+  <text x="502" y="256" fill="#c9d6e6" font-size="13">mcp-apps-universal (link:)</text>
+  <text x="488" y="300" fill="#ffd479" font-size="12">только сторонние плагины + engines.dsh</text>
+  <text x="488" y="322" fill="#6f8299" font-size="12">несовместимое ядро отключит плагин, а не DSH</text>
+
+  <path d="M412 220 L458 220" stroke="#8fb4ff" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8fb4ff"/>
+    </marker>
+  </defs>
+
+  <text x="32" y="396" fill="#6f8299" font-size="12">Официальные пакеты — из ядра, профиль — только стороннее. / Official packages from the core; third-party only in the profile.</text>
+</svg>
