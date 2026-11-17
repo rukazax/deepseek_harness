@@ -61,6 +61,9 @@ function normalizeConfig(raw) {
 		recallLimit: Math.round(num("recallLimit", 3, 1, 8)),
 		minRecallScore: num("minRecallScore", 0.32, 0.05, 0.95),
 		routineMinScore: num("routineMinScore", 0.45, 0.1, 0.95),
+		goalDriftMin: num("goalDriftMin", 0.34, 0.05, 0.95),
+		goalGuardChars: Math.round(num("goalGuardChars", 420, 160, 1600)),
+		skillMinScore: num("skillMinScore", 0.5, 0.1, 0.95),
 		autoMine: c.autoMine !== false,
 		weeklyAnalysis: c.weeklyAnalysis !== false,
 		vaultSync: c.vaultSync !== false,
@@ -171,10 +174,37 @@ function clip(text, max) {
 
 /* ── store over node:sqlite ────────────────────────────────────────────── */
 
+/** Open the shared DB; a damaged file is moved aside and a fresh one is created (self-healing). */
+function openDatabase(file, warnFn) {
+	const attempt = () => {
+		const db = new DatabaseSync(file);
+		db.exec("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000;");
+		try {
+			const row = db.prepare("PRAGMA quick_check").get();
+			const verdict = String(Object.values(row ?? {})[0] ?? "");
+			if (verdict !== "ok") throw new Error(`quick_check: ${verdict}`);
+		} catch (error) {
+			try { db.close(); } catch { /* ignore */ }
+			throw error;
+		}
+		return db;
+	};
+	try {
+		return attempt();
+	} catch (error) {
+		warnFn(`db self-heal: ${String(error)}`);
+		try { fs.renameSync(file, `${file}.corrupt-${Date.now()}`); } catch { /* ignore */ }
+		for (const suffix of ["-wal", "-shm"]) {
+			try { fs.rmSync(`${file}${suffix}`, { force: true }); } catch { /* ignore */ }
+		}
+		return attempt();
+	}
+}
+
 class MemoryStore {
 	constructor(file, warnFn) {
 		fs.mkdirSync(path.dirname(file), { recursive: true });
-		this.db = new DatabaseSync(file);
+		this.db = openDatabase(file, warnFn);
 		this.warn = warnFn;
 		this.db.exec(`
 			PRAGMA journal_mode = WAL;
@@ -230,6 +260,65 @@ class MemoryStore {
 				key TEXT PRIMARY KEY,
 				value TEXT NOT NULL
 			);
+		`);
+		/* schema v2 — project memory: sessions, goals, steps, learned skills */
+		this.db.exec(`
+			CREATE TABLE IF NOT EXISTS mh_sessions (
+				session_id TEXT PRIMARY KEY,
+				project TEXT NOT NULL DEFAULT '',
+				title TEXT NOT NULL DEFAULT '',
+				summary TEXT NOT NULL DEFAULT '',
+				vec TEXT NOT NULL DEFAULT '[]',
+				started_at INTEGER NOT NULL,
+				updated_at INTEGER NOT NULL,
+				turns INTEGER NOT NULL DEFAULT 0,
+				done INTEGER NOT NULL DEFAULT 0
+			);
+			CREATE INDEX IF NOT EXISTS mh_sessions_project ON mh_sessions(project, updated_at);
+			CREATE TABLE IF NOT EXISTS mh_goals (
+				id TEXT PRIMARY KEY,
+				session_id TEXT NOT NULL DEFAULT '',
+				project TEXT NOT NULL DEFAULT '',
+				text TEXT NOT NULL,
+				vec TEXT NOT NULL DEFAULT '[]',
+				status TEXT NOT NULL DEFAULT 'active',
+				progress INTEGER NOT NULL DEFAULT 0,
+				created_at INTEGER NOT NULL,
+				updated_at INTEGER NOT NULL
+			);
+			CREATE INDEX IF NOT EXISTS mh_goals_status ON mh_goals(status, updated_at);
+			CREATE INDEX IF NOT EXISTS mh_goals_project ON mh_goals(project, status);
+			CREATE TABLE IF NOT EXISTS mh_steps (
+				id TEXT PRIMARY KEY,
+				session_id TEXT NOT NULL DEFAULT '',
+				project TEXT NOT NULL DEFAULT '',
+				turn INTEGER NOT NULL DEFAULT 0,
+				ts INTEGER NOT NULL,
+				kind TEXT NOT NULL DEFAULT 'tool',
+				name TEXT NOT NULL DEFAULT '',
+				text TEXT NOT NULL DEFAULT '',
+				ok INTEGER NOT NULL DEFAULT 1,
+				vec TEXT NOT NULL DEFAULT '[]'
+			);
+			CREATE INDEX IF NOT EXISTS mh_steps_session ON mh_steps(session_id, ts);
+			CREATE INDEX IF NOT EXISTS mh_steps_project ON mh_steps(project, ts);
+			CREATE TABLE IF NOT EXISTS mh_skills (
+				id TEXT PRIMARY KEY,
+				tkey TEXT NOT NULL DEFAULT '',
+				project TEXT NOT NULL DEFAULT '',
+				name TEXT NOT NULL DEFAULT '',
+				trigger TEXT NOT NULL DEFAULT '',
+				vec TEXT NOT NULL DEFAULT '[]',
+				steps TEXT NOT NULL DEFAULT '',
+				artifact TEXT NOT NULL DEFAULT '',
+				ok_count INTEGER NOT NULL DEFAULT 1,
+				fail_count INTEGER NOT NULL DEFAULT 0,
+				status TEXT NOT NULL DEFAULT 'proposed',
+				created_at INTEGER NOT NULL,
+				updated_at INTEGER NOT NULL
+			);
+			CREATE INDEX IF NOT EXISTS mh_skills_tkey ON mh_skills(tkey);
+			PRAGMA user_version = 2;
 		`);
 	}
 
@@ -344,6 +433,89 @@ class MemoryStore {
 		this.db.prepare(`DELETE FROM routines WHERE id = ?`).run(id);
 		this.db.prepare(`DELETE FROM templates WHERE key = ?`).run(id);
 	}
+
+	/* ── project memory (schema v2) ── */
+	sessionTouch(sessionId, project, title, ts) {
+		this.db.prepare(`INSERT INTO mh_sessions (session_id, project, title, started_at, updated_at, turns)
+			VALUES (?, ?, ?, ?, ?, 1)
+			ON CONFLICT(session_id) DO UPDATE SET
+				updated_at = excluded.updated_at,
+				turns = mh_sessions.turns + 1,
+				title = CASE WHEN mh_sessions.title = '' THEN excluded.title ELSE mh_sessions.title END,
+				project = CASE WHEN mh_sessions.project = '' THEN excluded.project ELSE mh_sessions.project END`).run(sessionId, project, title, ts, ts);
+	}
+
+	sessionFinalize(sessionId, summary, vec, ts) {
+		this.db.prepare(`UPDATE mh_sessions SET summary = ?, vec = ?, updated_at = ? WHERE session_id = ?`).run(summary, JSON.stringify(vec), ts, sessionId);
+	}
+
+	sessionGet(sessionId) { return this.db.prepare(`SELECT * FROM mh_sessions WHERE session_id = ?`).get(sessionId); }
+	sessionRecent(project, limit) {
+		return project === ""
+			? this.db.prepare(`SELECT * FROM mh_sessions ORDER BY updated_at DESC LIMIT ?`).all(limit)
+			: this.db.prepare(`SELECT * FROM mh_sessions WHERE project = ? ORDER BY updated_at DESC LIMIT ?`).all(project, limit);
+	}
+	sessionCount() { return this.db.prepare(`SELECT COUNT(*) AS n FROM mh_sessions`).get()?.n ?? 0; }
+
+	goalCreate(sessionId, project, text, vec, ts) {
+		const id = sha256(`${sessionId}|${project}|${text}`).slice(0, 16);
+		this.db.prepare(`INSERT INTO mh_goals (id, session_id, project, text, vec, status, progress, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, 'active', 0, ?, ?)
+			ON CONFLICT(id) DO UPDATE SET updated_at = excluded.updated_at`).run(id, sessionId, project, text, JSON.stringify(vec), ts, ts);
+		return id;
+	}
+
+	goalActiveSession(sessionId) {
+		return this.db.prepare(`SELECT * FROM mh_goals WHERE session_id = ? AND status = 'active' ORDER BY updated_at DESC LIMIT 1`).get(sessionId);
+	}
+	goalActiveProject(project, limit) {
+		return this.db.prepare(`SELECT * FROM mh_goals WHERE project = ? AND status = 'active' ORDER BY updated_at DESC LIMIT ?`).all(project, limit);
+	}
+	goalBump(id, ts) { this.db.prepare(`UPDATE mh_goals SET progress = progress + 1, updated_at = ? WHERE id = ?`).run(ts, id); }
+	goalSetStatus(id, status, ts) { this.db.prepare(`UPDATE mh_goals SET status = ?, updated_at = ? WHERE id = ?`).run(status, ts, id); }
+	goalList(limit) { return this.db.prepare(`SELECT * FROM mh_goals ORDER BY (status = 'active') DESC, updated_at DESC LIMIT ?`).all(limit); }
+	goalCount() { return this.db.prepare(`SELECT COUNT(*) AS n FROM mh_goals WHERE status = 'active'`).get()?.n ?? 0; }
+
+	stepsAdd(rows) {
+		if (rows.length === 0) return;
+		const stmt = this.db.prepare(`INSERT OR REPLACE INTO mh_steps
+			(id, session_id, project, turn, ts, kind, name, text, ok, vec) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+		this.db.exec("BEGIN");
+		try {
+			for (const r of rows) stmt.run(r.id, r.sessionId, r.project, r.turn, r.ts, r.kind, r.name, r.text, r.ok, JSON.stringify(r.vec ?? []));
+			this.db.exec("COMMIT");
+		} catch (error) {
+			try { this.db.exec("ROLLBACK"); } catch { /* ignore */ }
+			throw error;
+		}
+	}
+
+	stepsSince(sessionId, limit) {
+		return this.db.prepare(`SELECT kind, name, text, ok, ts FROM mh_steps WHERE session_id = ? ORDER BY ts DESC LIMIT ?`).all(sessionId, limit);
+	}
+	stepCount(sessionId) { return this.db.prepare(`SELECT COUNT(*) AS n FROM mh_steps WHERE session_id = ?`).get(sessionId)?.n ?? 0; }
+	stepTotal() { return this.db.prepare(`SELECT COUNT(*) AS n FROM mh_steps`).get()?.n ?? 0; }
+
+	skillUpsert(tkey, project, nameV, trigger, vec, steps, artifact, ts) {
+		const id = sha256(`skill|${tkey}`).slice(0, 16);
+		this.db.prepare(`INSERT INTO mh_skills (id, tkey, project, name, trigger, vec, steps, artifact, ok_count, fail_count, status, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 'proposed', ?, ?)
+			ON CONFLICT(id) DO UPDATE SET
+				ok_count = ok_count + 1,
+				project = excluded.project,
+				name = excluded.name,
+				trigger = excluded.trigger,
+				steps = excluded.steps,
+				artifact = excluded.artifact,
+				status = CASE WHEN mh_skills.ok_count + 1 >= 2 THEN 'active' ELSE mh_skills.status END,
+				updated_at = excluded.updated_at`).run(id, tkey, project, nameV, trigger, JSON.stringify(vec), steps, artifact, ts, ts);
+		return id;
+	}
+
+	skillByKey(tkey) { return this.db.prepare(`SELECT * FROM mh_skills WHERE tkey = ?`).get(tkey); }
+	skillList(limit) { return this.db.prepare(`SELECT * FROM mh_skills WHERE status = 'active' ORDER BY ok_count DESC, updated_at DESC LIMIT ?`).all(limit); }
+	skillCount() { return this.db.prepare(`SELECT COUNT(*) AS n FROM mh_skills`).get()?.n ?? 0; }
+	skillFail(id, ts) { this.db.prepare(`UPDATE mh_skills SET fail_count = fail_count + 1, updated_at = ? WHERE id = ?`).run(ts, id); }
 
 	close() { try { this.db.close(); } catch { /* already closed */ } }
 }
@@ -613,6 +785,103 @@ function apply(ctx, rawConfig) {
 		warn(ctx, `session/event registration failed: ${String(error)}`);
 	}
 
+	/* ── project memory: шаги, конспекты сессий, цели, навыки (schema v2) ── */
+	const stepBuf = [];
+	let stepFlushAt = 0;
+
+	function flushSteps() {
+		if (stepBuf.length === 0) return;
+		try {
+			store.stepsAdd(stepBuf.splice(0, stepBuf.length));
+		} catch (error) {
+			warn(ctx, `steps flush failed: ${String(error)}`);
+		}
+	}
+
+	/** Hermes-принцип: решение с командами превращается в переиспользуемый навык. */
+	function registerSkill(meta, open, ts) {
+		try {
+			const solution = String(open.solution ?? "");
+			const title = String(open.title || open.userText || "");
+			if (solution.length < 80 || title.length < 8) return;
+			const tkey = templateKey(title);
+			if (tkey.length < 8) return;
+			const cmds = store.stepsSince(meta.sessionId, 10)
+				.filter((s) => s.kind === "command" && s.ok === 1)
+				.map((s) => clip(s.text, 160));
+			const steps = clip(cmds.length > 0 ? cmds.join("\n") : clip(solution, 420), 700);
+			store.skillUpsert(tkey, meta.project, clip(title, 60), clip(open.userText, 200), [...embed(tkey, idfCurrent())], steps, clip(solution, 300), ts);
+		} catch (error) {
+			warn(ctx, `skill upsert failed: ${String(error)}`);
+		}
+	}
+
+	try {
+		ctx.on("session/event", (session, event) => {
+			try {
+				const type = String(event?.type ?? "");
+				if (!type.startsWith("tool/") && type !== "turn/start" && type !== "turn/end") return;
+				const data = event?.data ?? {};
+				if (data?.source?.kind === "memory-hub") return;
+				const meta = sessionMeta(session);
+				const ts = Number(event.time ?? Date.now());
+				const open = openTurns.get(session);
+
+				if (type === "turn/start") {
+					if (open === undefined) return;
+					store.sessionTouch(meta.sessionId, meta.project, clip(open.userText, 120), ts);
+					if (open.userText.trim().length >= 12 && store.goalActiveSession(meta.sessionId) === undefined) {
+						store.goalCreate(meta.sessionId, meta.project, clip(open.userText, 400), [...embed(open.userText, idfCurrent())], ts);
+					}
+					return;
+				}
+
+				if (type === "turn/end") {
+					flushSteps();
+					if (open === undefined) return;
+					const goal = store.goalActiveSession(meta.sessionId);
+					if (goal !== undefined) store.goalBump(goal.id, ts);
+					const summary = clip([clip(open.userText, 200), clip(open.solution ?? "", 420)].filter(Boolean).join(" → "), 620);
+					if (summary.length >= 40) store.sessionFinalize(meta.sessionId, summary, [...embed(summary, idfCurrent())], ts);
+					registerSkill(meta, open, ts);
+					return;
+				}
+
+				// tool/call | tool/result → шаг проекта (команда или вызов инструмента)
+				const toolName = String(data.name ?? data.tool ?? data.call?.name ?? data.toolName ?? "");
+				const rawArgs = data.arguments ?? data.args ?? data.input ?? data.call?.arguments ?? {};
+				const cmd = typeof rawArgs?.command === "string" ? rawArgs.command
+					: typeof rawArgs?.cmd === "string" ? rawArgs.cmd
+						: typeof rawArgs === "string" ? rawArgs : JSON.stringify(rawArgs ?? {});
+				if (type === "tool/result" && toolName === "") return; // результат без имени не нужен
+				const body = clip(`${toolName} ${clip(String(cmd ?? ""), 260)}`, 500);
+				if (body.trim().length < 4) return;
+				const ok = type === "tool/call" ? 1 : (data.isError === true || data.error !== undefined ? 0 : 1);
+				stepBuf.push({
+					id: sha256(`${meta.sessionId}|${ts}|${stepBuf.length}|${toolName}`).slice(0, 24),
+					sessionId: meta.sessionId,
+					project: meta.project,
+					turn: open?.turn ?? 0,
+					ts,
+					kind: /(bash|shell|exec|terminal|run_command|sh)\b/i.test(toolName) ? "command" : "tool",
+					name: clip(toolName, 40),
+					text: body,
+					ok,
+					vec: []
+				});
+				const now = Date.now();
+				if (stepBuf.length >= 24 || now - stepFlushAt > 20000) {
+					stepFlushAt = now;
+					flushSteps();
+				}
+			} catch (error) {
+				warn(ctx, `project ingest failed: ${String(error)}`);
+			}
+		});
+	} catch (error) {
+		warn(ctx, `project ingest registration failed: ${String(error)}`);
+	}
+
 	/* ── obsidian vault sync ── */
 	if (config.vaultSync) {
 		if (vaultEnsure(config.vaultPath, (msg) => warn(ctx, msg))) {
@@ -820,6 +1089,78 @@ function apply(ctx, rawConfig) {
 		warn(ctx, `context registration failed: ${String(error)}`);
 	}
 
+	/* ── goal guard: сверка шага с вектором цели + подсказка навыка ── */
+	const goalGuardAt = new Map();
+	try {
+		const disposerGuard = ctx.systemPrompt.context({
+			name: "memory-hub:goal-guard",
+			order: ctx.systemPrompt.getContextOrder("SUBAGENT_DELEGATION") + 5,
+			required: false,
+			interpolate: false,
+			text: (assemblyContext) => {
+				try {
+					const session = assemblyContext?.agent?.session;
+					if (session === undefined) return "";
+					const open = openTurns.get(session);
+					const query = String(open?.userText ?? "");
+					if (query.trim().length < 20) return "";
+					const meta = sessionMeta(session);
+					const goal = store.goalActiveSession(meta.sessionId);
+					if (goal === undefined) return "";
+
+					const qvec = embed(query, idfCurrent());
+					const gvec = new Map(JSON.parse(goal.vec ?? "[]"));
+					const similarity = cosine(qvec, gvec);
+
+					// навык: тот же запрос уже решался (Hermes: опыт → переиспользуемый навык)
+					let skill = null;
+					let skillScore = 0;
+					for (const row of store.skillList(20)) {
+						const score = coverage(query, `${row.name} ${row.trigger}`);
+						if (score > skillScore) { skill = row; skillScore = score; }
+					}
+					const inVector = similarity >= config.goalDriftMin;
+					const skillHit = skill !== null && skillScore >= config.skillMinScore;
+					if (inVector && !skillHit) return "";
+
+					// не чаще, чем раз в два хода на сессию — экономим токены
+					const turn = Number(open?.turn ?? 0);
+					if (!skillHit && Number(goalGuardAt.get(session) ?? -99) > turn - 2) return "";
+					goalGuardAt.set(session, turn);
+
+					const parts = [];
+					if (!inVector) {
+						const steps = store.stepsSince(meta.sessionId, 3).filter((s) => s.text).map((s) => clip(s.text, 80));
+						parts.push(`Вектор цели проекта «${clip(goal.project || meta.project || "?", 24)}»: ${clip(goal.text, 180)}.`);
+						parts.push(`Пройдено шагов: ${store.stepCount(meta.sessionId)}${steps.length ? `; последние: ${steps.join(" | ")}` : ""}.`);
+						parts.push(`Текущий запрос слабо связан с целью (cos ${similarity.toFixed(2)}) — сверься, не потерян ли основной контекст.`);
+						stats.goalGuardHits = (stats.goalGuardHits ?? 0) + 1;
+						store.metaPut("goalGuardHits", String(stats.goalGuardHits));
+					}
+					if (skillHit) {
+						parts.push(`<skill name="${clip(skill.name, 40)}" uses="${skill.ok_count}" score="${skillScore.toFixed(2)}">`);
+						if (skill.steps) parts.push(`Порядок действий из прошлого успеха: ${clip(skill.steps, 220)}`);
+						if (skill.artifact) parts.push(`Результат: ${clip(skill.artifact, 120)}`);
+						parts.push("</skill>");
+					}
+					if (parts.length === 0) return "";
+					const block = `Память проекта (сверка с целью):\n${parts.join("\n")}`;
+					stats.goalGuardChars = (stats.goalGuardChars ?? 0) + block.length;
+					store.metaPut("goalGuardChars", String(stats.goalGuardChars));
+					return clip(block, config.goalGuardChars);
+				} catch (error) {
+					warn(ctx, `goal guard failed: ${String(error)}`);
+					return "";
+				}
+			}
+		});
+		disposers.push(disposerGuard);
+	} catch (error) {
+		warn(ctx, `goal guard registration failed: ${String(error)}`);
+	}
+
+	/* ── текущий вектор цели (без токенов, когда инъекция не нужна) ── */
+
 	/* ── small style-hint section ── */
 	try {
 		disposers.push(ctx.systemPrompt.section({
@@ -955,6 +1296,54 @@ function apply(ctx, rawConfig) {
 					return { profile: styleProfileText(style) };
 				}
 			}));
+
+			disposers.push(ctx.tools.register({
+				name: "memory_goal",
+				description: "Project goal vector: set/confirm the goal of this session or workspace, list active goals, mark one done or dropped. Goals are checked against every later step so the original intent is never lost.",
+				parameters: {
+					type: "object",
+					additionalProperties: false,
+					properties: {
+						action: { type: "string", enum: ["set", "list", "done", "drop"], description: "set = remember/replace the active goal; list = active goals; done/drop = close by id" },
+						text: { type: "string", description: "Goal wording for action=set (imperative, 1-2 sentences)" },
+						id: { type: "string", description: "Goal id for action=done|drop" },
+						project: { type: "string", description: "Limit list to this workspace (default: current)" }
+					}
+				},
+				output: {
+					schema: {
+						type: "object",
+						additionalProperties: false,
+						required: ["result"],
+						properties: { result: { type: "string" } }
+					},
+					render: (_args, value) => [{ type: "text", text: value.result }]
+				},
+				async execute(args, execution) {
+					const session = execution?.agent?.session ?? execution?.session;
+					const meta = session !== undefined ? sessionMeta(session) : { project: "", sessionId: "" };
+					const project = String(args?.project ?? meta.project ?? "");
+					const action = String(args?.action ?? "list");
+					const now = Date.now();
+					if (action === "set") {
+						const text = clip(String(args?.text ?? ""), 400);
+						if (text.length < 8) return { result: "Нужен текст цели (минимум 8 символов)." };
+						const id = store.goalCreate(meta.sessionId, project, text, [...embed(text, idfCurrent())], now);
+						return { result: `Цель зафиксирована: «${text}» (id ${id}, проект ${project || "—"}). Шаги будут сверяться с ней.` };
+					}
+					if (action === "done" || action === "drop") {
+						const id = String(args?.id ?? "");
+						if (id === "") return { result: "Укажите id цели (см. action=list)." };
+						store.goalSetStatus(id, action === "done" ? "done" : "dropped", now);
+						return { result: `Цель ${id} закрыта как ${action === "done" ? "выполненная" : "снятая"}.` };
+					}
+					const rows = project !== "" ? store.goalActiveProject(project, 10) : store.goalList(10).filter((g) => g.status === "active");
+					if (rows.length === 0) return { result: "Активных целей нет." };
+					return {
+						result: rows.map((g) => `- ${g.id} · ${clip(g.text, 160)} · проект ${g.project || "—"} · шагов ${g.progress}`).join("\n")
+					};
+				}
+			}));
 		} catch (error) {
 			warn(ctx, `tools registration failed: ${String(error)}`);
 		}
@@ -1002,6 +1391,12 @@ function apply(ctx, rawConfig) {
 			chunks: store.totalChunks(),
 			kinds,
 			sessions: store.distinctSessions(),
+			projectSessions: store.sessionCount(),
+			goals: store.goalCount(),
+			steps: store.stepTotal(),
+			skills: store.skillCount(),
+			goalGuardHits: Number(store.metaGet("goalGuardHits") ?? 0),
+			goalGuardChars: Number(store.metaGet("goalGuardChars") ?? 0),
 			routines: store.routineCount(),
 			injections: stats.injections,
 			injectedChars: stats.injectedChars,
@@ -1037,6 +1432,8 @@ function apply(ctx, rawConfig) {
 /* ── helpers kept top-level ────────────────────────────────────────────── */
 
 const Config = undefined;
-export { name, Config, inject, apply };
+/** Internals exposed for offline tests only (not a public API). */
+const __test = { MemoryStore, openDatabase, embed, cosine, coverage, templateKey, clip, normalizeConfig };
+export { name, Config, inject, apply, __test };
 
 

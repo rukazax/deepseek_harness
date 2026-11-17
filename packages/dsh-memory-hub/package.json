@@ -1,6 +1,6 @@
 {
   "name": "dsh-memory-hub",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Shared cross-chat and cross-workspace memory for DeepSeek Harness: vector+BM25 recall, task cache, routine mining, Observability stats, Obsidian sync, style profile and weekly causal analysis",
   "type": "module",
   "main": "./index.js",
@@ -43,8 +43,8 @@
     "url": "https://github.com/rukazax/deepseek_harness/issues"
   },
   "engines": {
-    "dsh": ">=0.2.2-rc.1 <0.3.0-0",
-    "node": ">=22.19"
+    "node": ">=22.19",
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
   },
   "dsh": {
     "bundle": {
