@@ -30,8 +30,8 @@
 
 ```bash
 cd ~/.dsh/profiles/<profile>
-pnpm add "file:<repo>/packages/dsh-auto-translate"
-# добавить имя пакета в dsh.profile.bundles (package.json) и перезапустить DSH
+pnpm add "@local/dsh-auto-translate@file:<repo>/packages/dsh-auto-translate"
+# добавить «@local/dsh-auto-translate» в dsh.profile.bundles (package.json) и перезапустить DSH
 ```
 
 Питона/сборки нет: клиентская половина — самодостаточный файл `lib/client.js`.
@@ -77,8 +77,8 @@ interface through third-party services. **Off by default**; a floating button tu
 
 ```bash
 cd ~/.dsh/profiles/<profile>
-pnpm add "file:<repo>/packages/dsh-auto-translate"
-# add the package name to dsh.profile.bundles in package.json and restart DSH
+pnpm add "@local/dsh-auto-translate@file:<repo>/packages/dsh-auto-translate"
+# add "@local/dsh-auto-translate" to dsh.profile.bundles in package.json and restart DSH
 ```
 
 No Python, no build step: the browser half is one self-contained file, `lib/client.js`.

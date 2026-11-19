@@ -1,5 +1,5 @@
 {
-	"name": "dsh-memory-hub",
+	"name": "@local/dsh-memory-hub",
 	"version": "0.4.0",
 	"description": "Shared cross-chat/cross-workspace agent memory for DeepSeek Harness: stemmed signed-hash recall with a locally mined association thesaurus, citations, FTS candidate index, MCP server, eval harness — zero tokens, zero dependencies",
 	"type": "module",

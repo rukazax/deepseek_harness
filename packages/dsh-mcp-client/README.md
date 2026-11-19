@@ -24,8 +24,8 @@ cp -r packages/dsh-mcp-client ~/.dsh/profiles/desktop/node_modules/dsh-mcp-clien
 
 ```json
 {
-  "dependencies": { "dsh-mcp-client": "1.0.0" },
-  "dsh": { "profile": { "bundles": ["...", "dsh-mcp-client"] } }
+  "dependencies": { "@local/dsh-mcp-client": "file:<repo>/packages/dsh-mcp-client" },
+  "dsh": { "profile": { "bundles": ["...", "@local/dsh-mcp-client"] } }
 }
 ```
 
@@ -85,8 +85,8 @@ Add to `~/.dsh/profiles/desktop/package.json`:
 
 ```json
 {
-  "dependencies": { "dsh-mcp-client": "1.0.0" },
-  "dsh": { "profile": { "bundles": ["...", "dsh-mcp-client"] } }
+  "dependencies": { "@local/dsh-mcp-client": "file:<repo>/packages/dsh-mcp-client" },
+  "dsh": { "profile": { "bundles": ["...", "@local/dsh-mcp-client"] } }
 }
 ```
 

@@ -78,7 +78,7 @@ flowchart LR
 
 ```bash
 # 1) скопировать пакет в профиль DSH
-cp -r packages/dsh-mcp-client ~/.dsh/profiles/desktop/node_modules/dsh-mcp-client
+cp -r packages/dsh-mcp-client ~/.dsh/profiles/desktop/node_modules/@local/dsh-mcp-client
 
 # 2) добавить в профиль: package.json → dsh.profile.bundles, затем перезапустить DSH
 ```
@@ -190,8 +190,8 @@ flowchart LR
 ### Quick start
 
 ```bash
-cp -r packages/dsh-mcp-client ~/.dsh/profiles/desktop/node_modules/dsh-mcp-client
-# add "dsh-mcp-client" to dsh.profile.bundles in package.json, restart DSH
+cp -r packages/dsh-mcp-client ~/.dsh/profiles/desktop/node_modules/@local/dsh-mcp-client
+# add "@local/dsh-mcp-client" to dsh.profile.bundles in package.json, restart DSH
 python packages/mcp-sarex/server.py
 python packages/mcp-yandex-mail/server.py
 ```

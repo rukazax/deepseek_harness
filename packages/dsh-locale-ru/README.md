@@ -75,7 +75,7 @@ Loader в `cordis.patch.yml` профиля, сохраняя резервную
 ```yaml
 - insert:
     - id: dsh-locale-ru
-      name: dsh-locale-ru
+      name: "@local/dsh-locale-ru"
 ```
 
 ### Проверка результата
@@ -156,7 +156,7 @@ Manual alternative: copy the package directory into the profile `plugins/` folde
 ```yaml
 - insert:
     - id: dsh-locale-ru
-      name: dsh-locale-ru
+      name: "@local/dsh-locale-ru"
 ```
 
 ### Verify
