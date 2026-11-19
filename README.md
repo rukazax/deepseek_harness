@@ -1,3 +1,5 @@
+**← [Все проекты · All projects](https://github.com/rukazax?tab=repositories)**
+
 # DeepSeek Harness · Plugins
 
 <p align="center">
