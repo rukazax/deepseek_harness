@@ -1,0 +1,12 @@
+{
+  "name": "dsh-llm-account-auth",
+  "version": "0.2.0",
+  "description": "Sign-in tools for subscription model routes: start, watch, answer and cancel the OAuth grant flows registered by @deepseek-ai/dsh-llm-pi-ai (OpenAI ChatGPT Plus/Pro, Claude Pro/Max, Copilot, …)",
+  "type": "module",
+  "main": "./mount.js",
+  "exports": { ".": "./mount.js" },
+  "keywords": ["dsh-plugin", "deepseek-harness", "openai", "chatgpt", "oauth", "subscription"],
+  "author": "rukazax",
+  "license": "MIT",
+  "engines": { "node": ">=22.19", "dsh": ">=0.2.2-rc.1 <0.3.0-0" }
+}
