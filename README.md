@@ -215,3 +215,7 @@ python packages/mcp-yandex-mail/server.py
 ### License
 
 [MIT](LICENSE) © 2026 rukazax
+
+---
+
+#deepseek-harness #dsh-plugin #mcp #model-context-protocol #sarex #yandex-mail #nodejs #python #ru-en
