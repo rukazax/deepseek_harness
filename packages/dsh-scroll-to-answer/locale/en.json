@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Scroll back to answer start",
+    "description": "When a turn finishes, scrolls the chat to the first line of the answer just received."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "dsh-llm-failover",
+  "version": "0.1.0",
+  "description": "Автопереключение модели агента при RATE_LIMIT/QUOTA/ACCOUNT_QUOTA: select следующего маршрута цепочки, fail-fast без сжигания ретраев на мёртвом провайдере, rescue-followup для продолжения работы. Работает для всех агентов и субагентов профиля.",
+  "type": "module",
+  "main": "./mount.js",
+  "exports": { ".": "./mount.js" },
+  "keywords": ["dsh-plugin", "deepseek-harness", "failover", "rate-limit"],
+  "author": "rukazax",
+  "license": "MIT",
+  "engines": { "node": ">=22.19", "dsh": ">=0.2.2-rc.1 <0.3.0-0" }
+}

@@ -1,0 +1,35 @@
+# AutoHarness для DSH — самообучающийся слой скиллов.
+# Модель: tigerless-labs/autoharness (CAP → REF → promoter → IDX → MNG → curator → LED),
+# перенесённая на DSH-механизмы: session/event, spawn-сабагент, systemPrompt-контекст,
+# tools.guard и обычные SKILL.md в <DSH_HOME>/skills (их подхватывает dsh-skill-filesystem).
+- insert:
+    - id: autoharness
+      name: dsh-autoharness
+      config:
+        enabled: true
+        # триггер рефлексии: считается в tool-call'ах, а не в ходах
+        reflectEveryN: 50
+        # консолидация библиотеки (слияние почти-дублей) — заметно реже рефлексии
+        consolidateEveryN: 250
+        # сколько skill-провайдер получает запросов, прежде чем навык выходит из испытательного срока
+        maturityGlobal: 300
+        maturityProject: 100
+        # потолок зрелых навыков в слое
+        capacityGlobal: 20
+        capacityProject: 50
+        # префикс имени: всё, что пишет плагин, живёт в своём пространстве имён
+        skillPrefix: "ah-"
+        # слой по умолчанию для новых навыков: global (<DSH_HOME>/skills) или project (<repo>/.dsh/skills)
+        layer: global
+        # рефлектор запускается как обычный сабагент через этот провайдер
+        provider: spawn
+        # индекс скиллов в системном промпте (выключить = 1)
+        indexSuspended: false
+        indexMaxBytes: 1800
+        # предохранители захвата
+        captureMaxRecordBytes: 4000
+        captureMaxWindowBytes: 200000
+        # максимум непустых строк в теле навыка (защита от «транскрипта вместо правила»)
+        maxBodyLines: 60
+        # путь состояния; null → <DSH_HOME>/autoharness
+        stateDir: null

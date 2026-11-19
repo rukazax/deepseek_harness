@@ -109,13 +109,23 @@ class McpConnection {
         reject(new Error(`MCP request timed out: ${method}`));
       }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
-      this.proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n");
+      try {
+        this.proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n");
+      } catch (err) {
+        clearTimeout(timer);
+        this.pending.delete(id);
+        reject(err);
+      }
     });
   }
 
   notify(method, params) {
     if (!this.proc || this.disposed) return;
-    this.proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", method, params }) + "\n");
+    try {
+      this.proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", method, params }) + "\n");
+    } catch (err) {
+      this.logger.error?.(`[mcp:${this.config.id}] notify failed: ${err?.message ?? err}`);
+    }
   }
 
   async callTool(toolName, args) {

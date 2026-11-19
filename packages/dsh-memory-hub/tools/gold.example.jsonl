@@ -1,0 +1,11 @@
+# Hand-written probes for `memory-eval --gold`.
+# One JSON object per line: {"query": "...", "expect": ["<substring of the chunk text>"]}
+# A probe passes when any of the expected substrings appears in the top-5 hits.
+{"query": "каскад не работает", "expect": ["каскада через приложение"]}
+{"query": "сжатие контекста", "expect": ["сжатом контексте", "compaction"]}
+{"query": "lightrag сравнение", "expect": ["lightrag"]}
+{"query": "qwen подписка plus", "expect": ["подписку", "qwen.ai"]}
+{"query": "катамаран ECONA", "expect": ["Катамаран"]}
+{"query": "memory hub статистика токенов", "expect": ["Memory Hub"]}
+{"query": "cascade native installer", "expect": ["cascade"]}
+{"query": "навык из прошлого успеха", "expect": ["навык", "skill"]}

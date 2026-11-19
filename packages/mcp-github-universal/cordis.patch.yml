@@ -1,12 +1,24 @@
-# Универсальный доступ к GitHub по MCP.
-# Основной путь — локальный официальный сервер github-mcp-server (бинарник в $DSH_HOME/bin,
-# понимает fine-grained PAT): он и занимает toolset "github".
-# Облачный сервер api.githubcopilot.com оставлен как "github-cloud": на хостах без
-# Copilot-доступа он отвечает 403 «forbidden: access denied» на любой класс токенов
-# (проверено на gho_- и fine-grained PAT) и остаётся offline благодаря failOnStartupError: false.
-# Секреты не хранятся в пакете: токен и GITHUB_TOOLSETS читаются из переменных окружения.
+# GitHub по MCP — один локальный сервер, без дублей.
+#
+# Что здесь:
+#   * github — официальный github-mcp-server (бинарник в $DSH_HOME/bin, понимает
+#     fine-grained PAT). Единственная точка доступа к GitHub на этом хосте.
+#
+# Чего здесь больше нет (2026-11-17):
+#   * github-cloud (api.githubcopilot.com/mcp/x/all). На этом хосте эндпоинт
+#     отвечает 403 «forbidden: access denied» на любой класс токенов, а его
+#     схемы инструментов дублировали локальные 90 имён (плюс он единственный
+#     отдавал outputSchema без structuredContent и ронял вызовы).
+#   * git (mcp-git-local с путём Windows Scripts/python.exe). Сервер git
+#     объявлен в профиле (cordis.patch.yml профиля) с Linux-путём
+#     venvs/mcp-git/bin/python; копия здесь создавала дубль id mcp-git-local
+#     и на Linux не запускалась.
+#
+# Наборы инструментов GitHub читаются из окружения (GITHUB_TOOLSETS) в
+# /etc/dsh/dsh-github.env: сейчас default,actions,gists,notifications,code_security
+# (62 инструмента вместо 91 при all). Вернуть всё: GITHUB_TOOLSETS=all.
+# Токен тоже из окружения — в пакете секретов нет.
 - insert:
-    # Локальный официальный GitHub MCP Server: репозитории, файлы, issues, PR, Actions...
     - id: mcp-github-local
       name: '@deepseek-ai/dsh-mcp-client'
       config:
@@ -15,34 +27,5 @@
         command: !!js dshHomePath('bin/github-mcp-server')
         args: ['stdio']
         toolCallTimeoutMs: 120000
-        failOnStartupError: false
-
-    # Облачный GitHub (все toolsets): подключается только там, где аккаунту доступен
-    # Copilot-эндпоинт; иначе остаётся offline и не мешает локальному серверу.
-    - id: mcp-github-cloud
-      name: '@deepseek-ai/dsh-mcp-client'
-      config:
-        serverName: github-cloud
-        transport: streamable-http
-        url: https://api.githubcopilot.com/mcp/x/all
-        toolCallTimeoutMs: 120000
-        headers:
-          Authorization: !!js "process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? 'Bearer ' + process.env.GITHUB_PERSONAL_ACCESS_TOKEN : ''"
-        failOnStartupError: false
-        reconnect:
-          enabled: true
-          initialDelayMs: 500
-          maxDelayMs: 30000
-          maxAttempts: 10
-
-    # Локальный git: status, diff, add, commit, ветки, merge, log в репозиториях компьютера.
-    # Windows держит интерпретатор venv в Scripts/, Linux — в bin/.
-    - id: mcp-git-local
-      name: '@deepseek-ai/dsh-mcp-client'
-      config:
-        serverName: git
-        transport: stdio
-        command: !!js dshHomePath('venvs/mcp-git/Scripts/python.exe')
-        args: ['-m', 'mcp_server_git']
-        toolCallTimeoutMs: 120000
+        # Сервер обязателен: без него теряется весь GitHub-доступ.
         failOnStartupError: true

@@ -38,6 +38,15 @@ MCP-протокол и дать агентам единый, предсказу
 | [`dsh-auto-translate`](packages/dsh-auto-translate) | Опциональный автоперевод всех окон и страниц DSH сторонними сервисами в браузере, по умолчанию выключен: MyMemory/Google/Lingva без ключа, DeepL по ключу; выключение возвращает оригиналы; ноль токенов модели | Node.js (ESM), без сборки |
 | [`dsh-sync`](packages/dsh-sync) | Двусторонняя синхронизация истории сессий DSH между Windows-установкой и Linux-инстансом: sha256, конвертация `cwd` в заголовке, push/pull, бэкапы конфликтов. Утилита, а не плагин: `cordis.patch.yml` не требуется | PowerShell 5.1 + Node.js 22 |
 | [`dsh-profile-doctor`](packages/dsh-profile-doctor) | Профиль DSH отдельно от ядра: находит копии официальных пакетов, устаревшие исключения совместимости и несовместимые плагины, чинит их — обновление ядра больше не ломает старт. Инструмент, а не плагин | Node.js 22 (ESM) |
+| [`dsh-llm-failover`](packages/dsh-llm-failover) | Автопереключение модели при 429/квоте провайдера: перехват неудачного запроса, повтор на следующей разрешённой модели, сообщение в сессию | Node.js (ESM) |
+| [`dsh-autoharness`](packages/dsh-autoharness) | Самообучение агента: из сессии вытаскиваются повторяемые приёмы и складываются в собственные скиллы `ah-*` через промоутер | Node.js (ESM) |
+| [`dsh-session-link`](packages/dsh-session-link) | Связь сессий: модель и подагенты для конкретной сессии, ссылки на связанные чаты, передача задач между ними | Node.js (ESM) |
+| [`dsh-topic-bridge`](packages/dsh-topic-bridge) | Мост «группа Telegram → сессия рабочего пространства»: задание из очереди уходит в сессию, ответ — один раз на запрос | Node.js (ESM) |
+| [`dsh-zvno-subagent-policy`](packages/dsh-zvno-subagent-policy) | Политика моделей подагентов: дописывает разрешённый список в сессии, созданные до включения allowlist | Node.js (ESM) |
+| [`dsh-command-agent-skills`](packages/dsh-command-agent-skills) | Слэш-команды по каталогу скиллов: список и вызов скилла прямо из композера | Node.js (ESM) |
+| [`dsh-local-settings`](packages/dsh-local-settings) | Локальные настройки хоста поверх профиля — правки, которые не должны попадать в общий конфиг | Node.js (ESM) |
+| [`dsh-scroll-to-answer`](packages/dsh-scroll-to-answer) | Прокрутка к началу ответа после регенерации вместо прыжка в конец длинной реплики | Node.js (ESM), клиент |
+| [`dsh-skill-replica`](packages/dsh-skill-replica) | Пакет скиллов `replica`: чистое пересоздание приложения/сайта — реконструкция, дизайн-система, оценка совпадения | Markdown-скиллы |
 
 ## Архитектура
 
@@ -140,6 +149,15 @@ predictable access path — no ad-hoc scripts per task.
 | [`dsh-auto-translate`](packages/dsh-auto-translate) | Optional browser-side auto-translation of any window or page of DSH through third-party services, off by default: keyless MyMemory/Google/Lingva, DeepL with a key; switching off restores originals; zero model tokens | Node.js (ESM), no build step |
 | [`dsh-sync`](packages/dsh-sync) | Two-way sync of DSH session history between a Windows install and a Linux instance: sha256, header `cwd` conversion, push/pull, conflict backups. A utility, not a plugin: no `cordis.patch.yml` needed | PowerShell 5.1 + Node.js 22 |
 | [`dsh-profile-doctor`](packages/dsh-profile-doctor) | Keeps a DSH profile isolated from the core: finds copies of official packages, stale compatibility exemptions and incompatible plugins, repairs them — a core update no longer breaks startup. A tool, not a plugin | Node.js 22 (ESM) |
+| [`dsh-llm-failover`](packages/dsh-llm-failover) | Automatic model failover on provider 429/quota: intercepts the failed request, retries on the next allowed model, reports into the session | Node.js (ESM) |
+| [`dsh-autoharness`](packages/dsh-autoharness) | Agent self-learning: repeated techniques are mined from a session and distilled into its own `ah-*` skills through a promoter | Node.js (ESM) |
+| [`dsh-session-link`](packages/dsh-session-link) | Session linking: model and subagents for one session, links to related chats, task hand-off between them | Node.js (ESM) |
+| [`dsh-topic-bridge`](packages/dsh-topic-bridge) | Telegram group → workspace session bridge: takes queued tasks into the session and replies exactly once per request | Node.js (ESM) |
+| [`dsh-zvno-subagent-policy`](packages/dsh-zvno-subagent-policy) | Subagent model policy: appends the allowed list to sessions created before the allowlist existed | Node.js (ESM) |
+| [`dsh-command-agent-skills`](packages/dsh-command-agent-skills) | Slash commands over the skill catalog: list and invoke a skill right from the composer | Node.js (ESM) |
+| [`dsh-local-settings`](packages/dsh-local-settings) | Host-local settings on top of the profile — overrides that must not leak into the shared config | Node.js (ESM) |
+| [`dsh-scroll-to-answer`](packages/dsh-scroll-to-answer) | Scrolls to the start of a regenerated answer instead of jumping to the end of a long reply | Node.js (ESM), client |
+| [`dsh-skill-replica`](packages/dsh-skill-replica) | `replica` skill pack: clean-room rebuild of an app or site — recon, design system, parity scoring | Markdown skills |
 
 ```mermaid
 flowchart LR

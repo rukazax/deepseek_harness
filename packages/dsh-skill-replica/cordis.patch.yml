@@ -1,0 +1,8 @@
+- insert:
+    - id: replica-skills
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: replica
+        includeDefaultRoots: false
+        customSkillDirs:
+          - /srv/apps/dsh/workspaces/pc_admin/replica-dsh/skills

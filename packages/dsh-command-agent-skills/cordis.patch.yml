@@ -1,0 +1,3 @@
+- insert:
+    - id: command-agent-skills
+      name: '@local/dsh-command-agent-skills'

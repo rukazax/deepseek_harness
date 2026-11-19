@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "AutoHarness (self-learning skills)",
+    "description": "A self-maintaining skill layer: session capture, reflection every N tool calls, a single validating writer, a skill index at session start, adherence metrics instead of a benchmark, archive instead of delete."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@local/dsh-session-link",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cross-workspace session discovery, asynchronous tasks and replies through native DSH inboxes.",
+  "engines": { "dsh": ">=0.2.2-rc.3 <0.3.0" },
+  "exports": { ".": "./index.js", "./locale/*.json": "./locale/*.json", "./icon": "./icon.png" },
+  "files": ["index.js", "plugin.js", "cordis.patch.yml", "locale", "icon.png", "README.md"],
+  "scripts": { "test": "node --test test.mjs", "check": "node --check plugin.js" },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+}

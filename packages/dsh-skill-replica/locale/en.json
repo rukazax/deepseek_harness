@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Replica: clone an app",
+    "description": "Eleven clean-room stages that take an app from recon to a shipped, rebranded clone: recon map, stack, design tokens, build, backend, tests, parity score, review mining, brand, launch, deploy. Ships the pack's own Python utilities.",
+    "detail": "docs/DETAIL.md"
+  }
+}

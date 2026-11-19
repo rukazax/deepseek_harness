@@ -1,0 +1,12 @@
+{
+  "name": "dsh-zvno-subagent-policy",
+  "version": "0.1.0",
+  "description": "ZVNO: дописывает subagent/model-selection-policy в живую сессию оркестратора, чтобы явные маршруты пула субагентов (пул берётся из allowedModels в subagent-model-selection-settings) проходили без пересоздания сессии. Новые сессии получают политику из subagent-model-selection-settings штатно.",
+  "type": "module",
+  "main": "./mount.js",
+  "exports": { ".": "./mount.js" },
+  "keywords": ["dsh-plugin", "zvno", "subagent-model-selection"],
+  "author": "rukazax",
+  "license": "MIT",
+  "engines": { "node": ">=22.19", "dsh": ">=0.2.2-rc.1 <0.3.0-0" }
+}

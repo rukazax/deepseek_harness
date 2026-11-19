@@ -1,7 +1,7 @@
 {
   "name": "mcp-github-universal",
-  "version": "0.2.0",
-  "description": "Universal GitHub access for DeepSeek Harness over MCP: official local GitHub MCP Server binary (fine-grained PAT friendly) with the cloud endpoint as fallback, plus a local Git server from a DSH-home venv",
+  "version": "0.3.0",
+  "description": "Universal GitHub access for DeepSeek Harness over MCP: a single official local GitHub MCP Server binary (fine-grained PAT friendly, toolset set from GITHUB_TOOLSETS). The cloud endpoint and the duplicate git server were removed in 0.3.0; the git server is declared in the profile.",
   "type": "module",
   "exports": {
     "./cordis.patch.yml": "./cordis.patch.yml",

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Replica">
+  <rect width="64" height="64" rx="14" fill="#1f2937"/>
+  <rect x="14" y="14" width="26" height="26" rx="6" fill="none" stroke="#94a3b8" stroke-width="4"/>
+  <rect x="24" y="24" width="26" height="26" rx="6" fill="#1f2937" stroke="#38bdf8" stroke-width="4"/>
+  <path d="M37 37h9M41.5 32.5v9" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+</svg>

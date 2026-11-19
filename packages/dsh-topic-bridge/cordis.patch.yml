@@ -1,0 +1,3 @@
+- insert:
+    - id: local-topic-bridge
+      name: '@local/dsh-topic-bridge'

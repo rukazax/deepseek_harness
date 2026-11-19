@@ -1,0 +1,9 @@
+# The local settings layer — host-side behaviour that core *config* cannot
+# express, without patching a single core file.
+#
+# One row, inserted at the end of the tree. The plugin reads the host's settings
+# file (/srv/apps/dsh/settings/settings.env) or the environment exported by the
+# systemd EnvironmentFile and adjusts the running directory-picker backend.
+- insert:
+    - id: local-settings
+      name: dsh-local-settings

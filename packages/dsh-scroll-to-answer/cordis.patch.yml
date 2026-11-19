@@ -1,0 +1,4 @@
+# Скролл к началу ответа после завершения хода (client-only плагин).
+- insert:
+    - id: scroll-to-answer
+      name: dsh-scroll-to-answer

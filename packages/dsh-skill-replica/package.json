@@ -1,0 +1,24 @@
+{
+  "name": "@local/dsh-skill-replica",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Replica pack for DSH: eleven clean-room app-cloning stages as one skill, with the pack's Python utilities",
+  "license": "MIT",
+  "exports": {
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "docs",
+    "skills"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

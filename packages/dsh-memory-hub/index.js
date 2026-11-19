@@ -60,6 +60,14 @@ function normalizeConfig(raw) {
 		recallChars: Math.round(num("recallChars", 900, 200, 4000)),
 		recallLimit: Math.round(num("recallLimit", 3, 1, 8)),
 		minRecallScore: num("minRecallScore", 0.32, 0.05, 0.95),
+		/* near-miss rescue: 0 disables it (default — no surprise tokens) */
+		recallFallbackScore: num("recallFallbackScore", 0, 0, 0.95),
+		fallbackChars: Math.round(num("fallbackChars", 160, 80, 600)),
+		/* association expansion of the query (locally mined, zero tokens) */
+		assocTop: Math.round(num("assocTop", 4, 0, 8)),
+		assocMinWeight: num("assocMinWeight", 0.22, 0.05, 1),
+		assocWeight: num("assocWeight", 0.45, 0, 1),
+		candidateLimit: Math.round(num("candidateLimit", 600, 100, 4000)),
 		routineMinScore: num("routineMinScore", 0.45, 0.1, 0.95),
 		goalDriftMin: num("goalDriftMin", 0.34, 0.05, 0.95),
 		goalGuardChars: Math.round(num("goalGuardChars", 420, 160, 1600)),
@@ -67,6 +75,21 @@ function normalizeConfig(raw) {
 		autoMine: c.autoMine !== false,
 		weeklyAnalysis: c.weeklyAnalysis !== false,
 		vaultSync: c.vaultSync !== false,
+		redact: c.redact !== false,
+		excludeProjects: Array.isArray(c.excludeProjects) ? c.excludeProjects.map(String).filter((p) => p.trim() !== "") : [],
+		privateProjects: Array.isArray(c.privateProjects) ? c.privateProjects.map(String).filter((p) => p.trim() !== "") : [],
+		stepRetentionDays: Math.round(num("stepRetentionDays", 365, 0, 3650)),
+		/* LightRAG graph: associative recall only when the local index misses */
+		lightragEnabled: c.lightragEnabled !== false,
+		lightragUrl: typeof c.lightragUrl === "string" && c.lightragUrl.trim().length > 8 ? c.lightragUrl.trim() : "http://127.0.0.1:9621",
+		lightragMode: ["local", "global", "hybrid", "mix", "naive"].includes(c.lightragMode) ? c.lightragMode : "mix",
+		lightragTopK: Math.round(num("lightragTopK", 24, 5, 100)),
+		lightragTimeoutMs: Math.round(num("lightragTimeoutMs", 6000, 500, 60000)),
+		lightragChars: Math.round(num("lightragChars", 600, 120, 2400)),
+		lightragWeakBelow: num("lightragWeakBelow", 0.55, 0.05, 0.99),
+		lightragAlways: c.lightragAlways === true,
+		lightragCrossWorkspace: c.lightragCrossWorkspace !== false,
+		lightragCacheTtlMs: Math.round(num("lightragCacheTtlMs", 600000, 10000, 3600000)),
 		vaultPath: typeof c.vaultPath === "string" && c.vaultPath.trim().length > 3
 			? path.resolve(c.vaultPath)
 			: path.join(homeDir(), "obsidian", "vault"),
@@ -78,23 +101,92 @@ function normalizeConfig(raw) {
 
 /* ── text math ─────────────────────────────────────────────────────────── */
 
-const VECTOR_DIM = 4096;
+/**
+ * Signed feature hashing (v3). Two independent hashes per feature: the bucket
+ * and the sign. The old unsigned scheme *added* weight on a collision, so two
+ * unrelated words could look similar; with a sign a collision mostly cancels.
+ */
+const VECTOR_DIM = 8192;
+const VEC_VERSION = 3;
+const MAX_FEATURES = 160;
 
-function fnv1a(str) {
+function hashA(str) {
 	let h = 0x811c9dc5;
 	for (let i = 0; i < str.length; i += 1) {
 		h ^= str.charCodeAt(i);
 		h = Math.imul(h, 0x01000193) >>> 0;
 	}
-	return h % VECTOR_DIM;
+	return h >>> 0;
 }
 
-/** Lowercase words (keep numbers, drop 1-2 char words) plus 4-char root aliases. */
-function wordsOf(text) {
+function hashB(str) {
+	let h = 0x9e3779b1;
+	for (let i = str.length - 1; i >= 0; i -= 1) {
+		h ^= str.charCodeAt(i);
+		h = Math.imul(h, 0x85ebca6b) >>> 0;
+		h ^= h >>> 13;
+	}
+	return h >>> 0;
+}
+
+function bucketOf(feature) { return hashA(feature) % VECTOR_DIM; }
+function signOf(feature) { return (hashB(feature) & 1) === 0 ? 1 : -1; }
+
+/* Russian inflection strip: longest endings first, never below a 4-char stem. */
+const RU_ENDINGS = [
+	"иями", "ями", "ами", "ией", "еей", "иях", "иям", "ием", "ого", "его", "ому", "ему", "ыми", "ими",
+	"ость", "есть", "ений", "аний", "ация", "ации", "ацию", "ировать", "изация", "изовать", "ывать", "овать",
+	"ать", "ять", "ить", "еть", "уть", "ться", "тся", "лся", "лась", "лись", "ший", "шая", "шее", "шие",
+	"ого", "его", "ому", "ему", "ыми", "ими", "ых", "их", "ый", "ий", "ой", "ей", "ая", "яя", "ое", "ее",
+	"ие", "ым", "им", "ом", "ем", "ах", "ях", "ов", "ев", "ью", "ия", "ию", "ии", "ся", "сь", "ть",
+	"ла", "ло", "ли", "ны", "на", "но", "ет", "ут", "ют", "ат", "ят", "у", "ю", "а", "я", "о", "е", "ы", "и", "ь"
+];
+
+const EN_ENDINGS = [
+	"ational", "ization", "iveness", "fulness", "ousness", "ations", "ements", "ingly", "ities",
+	"ation", "ement", "ments", "ness", "less", "able", "ible", "ance", "ence", "ally", "ment",
+	"ings", "ing", "ies", "ied", "ers", "est", "ed", "es", "ly", "s"
+];
+
+function stripEnding(word, endings, minStem) {
+	for (const end of endings) {
+		if (word.length - end.length >= minStem && word.endsWith(end)) return word.slice(0, -end.length);
+	}
+	return word;
+}
+
+/** Language-aware light stemmer: enough to fold inflection, far from aggressive. */
+function stemWord(word) {
+	if (word.length < 4 || /^[0-9]/.test(word)) return word;
+	if (/[\u0400-\u04FF]/.test(word)) return stripEnding(word, RU_ENDINGS, 4);
+	return stripEnding(word, EN_ENDINGS, 3);
+}
+
+/** Raw lowercase tokens (numbers kept, 1-2 char words dropped). */
+function rawWords(text) {
 	const out = [];
 	for (const raw of String(text).match(/[0-9]*[A-Za-zА-ЯЁа-яё][0-9A-Za-zА-ЯЁа-яё_\-\u0400-\u04FF]*/g) ?? []) {
 		const w = raw.toLowerCase();
 		if (w.length < 3 && !/^[0-9]/.test(w)) continue;
+		out.push(w);
+	}
+	return out;
+}
+
+/** Stem set of a text: the unit of lexical matching. */
+function stemsOf(text) {
+	const set = new Set();
+	for (const w of rawWords(text)) {
+		const s = stemWord(w);
+		if (s.length >= 3) set.add(s);
+	}
+	return set;
+}
+
+/** Lowercase words plus 4-char root aliases (legacy helper: templates, style). */
+function wordsOf(text) {
+	const out = [];
+	for (const w of rawWords(text)) {
 		out.push(w);
 		if (w.length >= 6) out.push(`~${w.slice(0, 4)}`);
 	}
@@ -116,23 +208,43 @@ function templateKey(text) {
 	return wordsOf(t).join(" ");
 }
 
-/** Sparse hashed TF-IDF vector (L2-normalized) as a Map(index → weight). */
+/** Sparse hashed TF-IDF vector (L2-normalized) as a Map(index → signed weight). */
 function embed(text, idf) {
-	const tf = new Map();
-	for (const w of wordsOf(text)) if (w.length >= 3) tf.set(w, (tf.get(w) ?? 0) + 1);
+	const features = new Map();
+	for (const w of rawWords(text)) {
+		const s = stemWord(w);
+		if (s.length < 3) continue;
+		features.set(`s:${s}`, 1);
+		if (s.length >= 6) features.set(`r:${s.slice(0, 4)}`, 0.45);
+		if (s.length >= 5) {
+			features.set(`^:${s.slice(0, 3)}`, 0.26);
+			features.set(`$:${s.slice(-3)}`, 0.26);
+		}
+	}
 	const vec = new Map();
-	for (const [w, count] of tf) {
-		const df = idf.map.get(w);
-		const idfWeight = df === undefined ? 1.8 : Math.log(1 + idf.docCount / (1 + df));
-		const weight = (1 + Math.log(count)) * idfWeight;
-		const idx = fnv1a(w);
-		vec.set(idx, (vec.get(idx) ?? 0) + weight);
+	const docCount = Math.max(1, Number(idf?.docCount) || 1);
+	for (const [key, base] of features) {
+		const isStem = key.startsWith("s:");
+		let weight = base;
+		if (isStem) {
+			const df = idf?.map?.get(key.slice(2));
+			weight *= df === undefined ? 1.6 : Math.log(1 + docCount / (1 + df));
+		}
+		const idx = bucketOf(key);
+		vec.set(idx, (vec.get(idx) ?? 0) + signOf(key) * weight);
+	}
+	/* cap the feature count so a long document cannot bloat the stored vector */
+	let entries = [...vec.entries()].filter(([, w]) => w !== 0);
+	if (entries.length > MAX_FEATURES) {
+		entries.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+		entries = entries.slice(0, MAX_FEATURES);
 	}
 	let norm = 0;
-	for (const weight of vec.values()) norm += weight * weight;
+	for (const [, w] of entries) norm += w * w;
 	norm = Math.sqrt(norm) || 1;
-	for (const [idx, weight] of vec) vec.set(idx, weight / norm);
-	return vec;
+	const out = new Map();
+	for (const [idx, w] of entries) out.set(idx, w / norm);
+	return out;
 }
 
 function cosine(a, b) {
@@ -145,23 +257,292 @@ function cosine(a, b) {
 	return acc;
 }
 
-/** Fuzzy word coverage: exact match, 5-char prefix, or 4-char common root. */
-function coverage(query, candidate) {
-	const qw = wordsOf(query).filter((w) => w.length >= 4 && !w.startsWith("~"));
-	if (qw.length === 0 || candidate === undefined) return 0;
-	const cw = wordsOf(candidate);
+/**
+ * Fuzzy stem coverage: exact stem, 5-char prefix, or a shared 4-char root.
+ * `extra` (association neighbours) scores at half weight — enough to rank a
+ * synonym hit above noise, never enough to outrank a literal match.
+ */
+function coverage(query, candidate, extra = undefined) {
+	const q = query instanceof Set ? query : stemsOf(query);
+	const cand = typeof candidate === "string" ? stemsOf(candidate) : (candidate ?? new Set());
+	if (q.size === 0) return 0;
 	const index = new Set();
-	for (const w of cw) {
+	for (const w of cand) {
 		index.add(w);
 		if (w.length >= 5) index.add(`p:${w.slice(0, 5)}`);
 		if (w.length >= 4) index.add(`r:${w.slice(0, 4)}`);
 	}
+	const hit = (w) => index.has(w) || index.has(`p:${w.slice(0, 5)}`) || index.has(`r:${w.slice(0, 4)}`);
 	let hits = 0;
-	for (const w of qw) {
-		if (index.has(w) || index.has(`p:${w}`) || index.has(`r:${w.slice(0, 4)}`)) hits += 1;
+	for (const w of q) {
+		if (w.length >= 4 && hit(w)) hits += 1;
 	}
-	return hits / Math.max(1, Math.min(qw.length, 24));
+	let extraHits = 0;
+	if (extra instanceof Set) {
+		for (const w of extra) if (w.length >= 4 && !q.has(w) && hit(w)) extraHits += 1;
+	}
+	const denom = Math.max(1, Math.min(q.size, 24));
+	return Math.min(1, (hits + 0.5 * extraHits) / denom);
 }
+
+/* ── privacy: secrets never reach the store ───────────────────────────── */
+
+const SECRET_PATTERNS = [
+	/\b(?:sk|pk|rk)[-_][A-Za-z0-9_-]{12,}\b/g,
+	/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g,
+	/\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g,
+	/\bAKIA[0-9A-Z]{16}\b/g,
+	/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g,
+	/(\b(?:password|passwd|pwd|secret|token|api[_-]?key|apikey)\b\s*[:=]\s*)["']?[^\s"',;]{6,}/gi
+];
+
+function redactSecret(match, prefix) {
+	if (typeof prefix === "string" && prefix.length > 0) return `${prefix}[redacted]`;
+	return "[redacted]";
+}
+
+/** Mask API keys, JWTs and `password: …` fragments before anything is stored. */
+function redact(text) {
+	let out = String(text);
+	for (const pattern of SECRET_PATTERNS) out = out.replace(pattern, redactSecret);
+	return out;
+}
+
+/** Canonical source reference shown in the prompt: 8 hex chars of the chunk id. */
+function chunkRef(id) { return String(id).slice(0, 8); }
+
+/* ── query side: association expansion + one scoring formula ───────────── */
+
+/**
+ * Build the query context once per request: the hashed vector plus the
+ * association neighbours of every query stem (mined locally from the corpus,
+ * so `каскад` ↔ `cascade` and `compaction` ↔ `сжатие` are learned from the
+ * author's own bilingual wording instead of an embedding API).
+ */
+function buildQuery(query, idf, assoc, options = {}) {
+	const terms = stemsOf(query);
+	const extra = new Map();
+	if (assoc !== undefined && assoc.size > 0 && terms.size > 0) {
+		const top = Math.max(0, Math.min(8, options.assocTop ?? 4));
+		const minWeight = options.assocMinWeight ?? 0.22;
+		for (const stem of terms) {
+			const list = assoc.get(stem);
+			if (!Array.isArray(list)) continue;
+			/* A same-script neighbour mostly repeats the query; a foreign-script
+			   one is where a synonym or a translation lives, so the two are
+			   selected separately instead of competing for the same top-N. */
+			const cyrillic = /[\u0400-\u04FF]/.test(stem);
+			const sameList = [];
+			const foreignList = [];
+			for (const pair of list) {
+				if (!Array.isArray(pair) || pair.length < 2) continue;
+				const [neighbour, weight] = pair;
+				if (typeof neighbour !== "string" || typeof weight !== "number") continue;
+				/* identifiers (`update-ed25519`, `xioawg0`, `9ec6678e`) are rare but
+				   useless for expansion: they never appear in a new request */
+				if (!/^[a-zа-яё][a-zа-яё-]{3,}$/.test(neighbour)) continue;
+				/* a token that mixes scripts is a parsing artefact, not a word */
+				if (/[а-яё]/.test(neighbour) && /[a-z]/.test(neighbour)) continue;
+				if (weight < minWeight || terms.has(neighbour)) continue;
+				const item = { term: neighbour, weight, df: idf?.map?.get(neighbour) ?? 0 };
+				if (/[\u0400-\u04FF]/.test(neighbour) !== cyrillic) foreignList.push(item);
+				else sameList.push(item);
+			}
+			sameList.sort((a, b) => b.weight - a.weight);
+			/* A cross-script neighbour is a candidate translation, and a *common*
+			   word is a far better bet than a one-off stem: rank by document
+			   frequency first, weight second. */
+			foreignList.sort((a, b) => (b.df - a.df) || (b.weight - a.weight));
+			for (const item of sameList.slice(0, Math.max(1, Math.floor(top / 2)))) extra.set(item.term, Math.max(extra.get(item.term) ?? 0, item.weight));
+			for (const item of foreignList.slice(0, Math.max(2, Math.ceil(top / 2) + 1))) extra.set(item.term, Math.max(extra.get(item.term) ?? 0, item.weight));
+		}
+	}
+	let vec = embed(query, idf);
+	if (extra.size > 0) {
+		const boost = options.assocWeight ?? 0.45;
+		const text = [...extra.entries()].map(([term, weight]) => `${term} `.repeat(Math.max(1, Math.round(1 + weight * 2)))).join(" ");
+		const extraVec = embed(text, idf);
+		vec = new Map(vec);
+		for (const [idx, weight] of extraVec) vec.set(idx, (vec.get(idx) ?? 0) + weight * boost);
+		let norm = 0;
+		for (const weight of vec.values()) norm += weight * weight;
+		norm = Math.sqrt(norm) || 1;
+		for (const [idx, weight] of vec) vec.set(idx, weight / norm);
+	}
+	return { query: String(query), vec, terms, extra };
+}
+
+/** One formula for live recall, the tuner and the eval harness alike. */
+function scoreCandidate(qc, cand, options = {}) {
+	const now = options.now ?? Date.now();
+	const vec = cand.vecMap ?? (cand.vec instanceof Map ? cand.vec : new Map(JSON.parse(String(cand.vec ?? "[]"))));
+	const stems = cand.stems instanceof Set ? cand.stems : stemsOf(cand.text);
+	const cos = cosine(qc.vec, vec);
+	const exact = coverage(qc.terms, stems);
+	const associative = qc.extra instanceof Map && qc.extra.size > 0 ? coverage(qc.terms, stems, new Set(qc.extra.keys())) : 0;
+	const sameProject = options.project !== undefined && options.project !== "" && String(cand.project ?? "") === options.project;
+	const recency = Math.exp(-Math.max(0, now - Number(cand.ts ?? 0)) / 86400000 / 45);
+	return 0.6 * cos + 0.24 * exact + 0.12 * associative + (sameProject ? 0.06 : 0) + 0.04 * recency;
+}
+
+/** Human-readable source stamp for a chunk (also served by `memory_source`). */
+function sourceStamp(chunk) {
+	const date = new Date(Number(chunk.ts ?? 0));
+	const when = Number.isNaN(date.getTime()) ? "—" : `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}`;
+	return `${chunkRef(chunk.id)} · ${chunk.kind}${chunk.project ? ` · ${clip(chunk.project, 18)}` : ""} · ${when}`;
+}
+
+/* ── vocabulary rebuild (module level: shared by the plugin, the eval
+      harness and the offline tools; pure CPU, no tokens) ───────────────── */
+
+/** Recount document frequency over the whole corpus with the v3 tokenizer. */
+function vocabularyRebuild(store) {
+	const df = {};
+	let docCount = 0;
+	let after = 0;
+	for (;;) {
+		const rows = store.chunkPage(after, 500);
+		if (rows.length === 0) break;
+		for (const row of rows) {
+			after = row.rowid;
+			for (const stem of stemsOf(row.text)) if (stem.length >= 3) df[stem] = (df[stem] ?? 0) + 1;
+			docCount += 1;
+		}
+	}
+	store.writeIdf({ docCount, df });
+	return { df, docCount, terms: Object.keys(df).length };
+}
+
+/** Re-embed every chunk plus the derived vectors (goals, summaries, skills). */
+function vectorsRebuild(store, idfView) {
+	let after = 0;
+	let count = 0;
+	for (;;) {
+		const rows = store.chunkPage(after, 300);
+		if (rows.length === 0) break;
+		for (const row of rows) {
+			after = row.rowid;
+			store.setChunkVec(row.id, [...embed(row.text, idfView())], VEC_VERSION);
+			count += 1;
+		}
+	}
+	for (const row of store.db.prepare(`SELECT id, text FROM mh_goals`).all()) {
+		store.db.prepare(`UPDATE mh_goals SET vec = ? WHERE id = ?`).run(JSON.stringify([...embed(String(row.text), idfView())]), row.id);
+	}
+	for (const row of store.db.prepare(`SELECT session_id, summary FROM mh_sessions WHERE summary <> ''`).all()) {
+		store.db.prepare(`UPDATE mh_sessions SET vec = ? WHERE session_id = ?`).run(JSON.stringify([...embed(String(row.summary), idfView())]), row.session_id);
+	}
+	for (const row of store.db.prepare(`SELECT id, name, trigger FROM mh_skills`).all()) {
+		store.db.prepare(`UPDATE mh_skills SET vec = ? WHERE id = ?`).run(JSON.stringify([...embed(`${row.name} ${row.trigger}`, idfView())]), row.id);
+	}
+	return count;
+}
+
+/**
+ * Co-occurrence associations (PPMI over the corpus) → the corpus's own
+ * thesaurus. Because the author mixes RU and EN inside one paragraph, a term
+ * and its translation share context and become neighbours: that is where
+ * `каскад` ↔ `cascade` comes from, with no external model involved.
+ * Returns rows ready for `store.assocReplace`.
+ */
+function associationsBuild(store, df, docCount, minWeight = 0.22) {
+	const docs = Math.max(1, docCount);
+	const pairs = new Map();
+	const PAIR_CAP = 1_200_000;
+	const WINDOW = 8;
+	const PER_CHUNK = 300;
+	let after = 0;
+	while (pairs.size < PAIR_CAP) {
+		const rows = store.chunkPage(after, 200);
+		if (rows.length === 0) break;
+		for (const row of rows) {
+			after = row.rowid;
+			/* Sliding window, not "any two terms in the chunk": a chunk is a long
+			   multi-topic text, so whole-chunk pairs diluted exactly the pairs that
+			   matter (a term next to its translation). Nearest neighbours first,
+			   capped per chunk so one huge log cannot own the thesaurus. */
+			const stems = rawWords(row.text)
+				.map(stemWord)
+				.filter((stem) => stem.length >= 3 && (df[stem] ?? 0) >= 2 && (df[stem] ?? 0) <= 1500)
+				/* hex ids and bare numbers are noise in a thesaurus */
+				.filter((stem) => !/^[0-9a-f]{6,}$/.test(stem) && !/^[0-9]+$/.test(stem));
+			const seen = new Set();
+			let added = 0;
+			for (let distance = 1; distance <= WINDOW && added < PER_CHUNK; distance += 1) {
+				for (let i = 0; i + distance < stems.length && added < PER_CHUNK; i += 1) {
+					const a = stems[i];
+					const b = stems[i + distance];
+					if (a === b) continue;
+					const key = a < b ? `${a}\u0001${b}` : `${b}\u0001${a}`;
+					if (seen.has(key)) continue;
+					seen.add(key);
+					pairs.set(key, (pairs.get(key) ?? 0) + 1);
+					added += 1;
+				}
+			}
+		}
+	}
+	const neighbours = new Map();
+	const push = (term, other, weight) => {
+		let list = neighbours.get(term);
+		if (list === undefined) { list = []; neighbours.set(term, list); }
+		list.push([other, weight]);
+	};
+	for (const [key, count] of pairs) {
+		if (count < 2) continue;
+		const [a, b] = key.split("\u0001");
+		const pmi = Math.log((count * docs) / (Math.max(1, df[a] ?? 1) * Math.max(1, df[b] ?? 1)));
+		if (!(pmi > 0)) continue;
+		/* Continuous strength: the old saturation at 1.0 flattened every strong
+		   pair into a tie and then truncated the list arbitrarily, which is how
+		   a real translation pair (`каскад`↔`cascade`) used to fall out. */
+		let weight = (pmi / 6) * Math.sqrt(count / (count + 2));
+		/* RU↔EN co-occurrence in one paragraph is itself evidence of a pair */
+		if (/[\u0400-\u04FF]/.test(a) !== /[\u0400-\u04FF]/.test(b)) weight *= 1.35;
+		weight = Math.min(1, weight);
+		if (weight < minWeight) continue;
+		push(a, b, weight);
+		push(b, a, weight);
+	}
+	const keep = new Map();
+	for (const [term, list] of neighbours) {
+		list.sort((x, y) => y[1] - x[1]);
+		keep.set(term, list.slice(0, 32));
+	}
+	/* truncation must not break symmetry: if `a` kept `b`, `b` keeps `a` too,
+	   otherwise a query in one direction finds the translation and the reverse
+	   one does not */
+	for (const [term, list] of [...keep]) {
+		for (const [other, weight] of list) {
+			const back = keep.get(other);
+			if (back === undefined) continue;
+			if (back.some(([name]) => name === term)) continue;
+			if (back.length < 32) { back.push([term, weight]); continue; }
+			/* full list: the reverse edge displaces the weakest entry, so a real
+			   translation is never crowded out by weak noise; a cross-script edge
+			   is always worth a slot (it is the only bridge between languages) */
+			/* displace the weakest neighbour that shares the host's script: a
+			   cross-script bridge already in the list must not be evicted by
+			   another cross-script arrival (both are scarce) */
+			const hostCyr = /[\u0400-\u04FF]/.test(other);
+			let weakest = -1;
+			for (let i = 0; i < back.length; i += 1) {
+				if (/[\u0400-\u04FF]/.test(back[i][0]) !== hostCyr) continue;
+				if (weakest < 0 || back[i][1] < back[weakest][1]) weakest = i;
+			}
+			if (weakest < 0) continue;
+			const crossScript = /[\u0400-\u04FF]/.test(term) !== /[\u0400-\u04FF]/.test(other);
+			if (crossScript || weight > back[weakest][1]) back[weakest] = [term, weight];
+		}
+	}
+	const entries = [];
+	for (const [term, list] of keep) {
+		const top = list.map(([other, weight]) => [other, Number(weight.toFixed(3))]);
+		if (top.length > 0) entries.push([term, df[term] ?? 1, top]);
+	}
+	return { entries, pairs: pairs.size };
+}
+
 
 function sha256(text) {
 	return createHash("sha256").update(String(text), "utf8").digest("hex").slice(0, 32);
@@ -170,6 +551,59 @@ function sha256(text) {
 function clip(text, max) {
 	const t = String(text).replace(/\s+/g, " ").trim();
 	return t.length <= max ? t : `${t.slice(0, Math.max(1, max - 1))}…`;
+}
+
+/* ── retrieval (module level: shared by the plugin, MCP, HTTP and eval) ── */
+
+/**
+ * Hybrid retrieval over one store. Candidates come from the FTS5 index (all of
+ * history, prefix-matched stems) plus a recent/project window; only those rows
+ * are scored, so the cost no longer grows with the whole store.
+ */
+function searchMemory(store, query, options = {}) {
+	const config = options.config ?? normalizeConfig({});
+	const idf = options.idf ?? store.readIdf();
+	const assoc = options.assoc ?? new Map();
+	const stemsFor = options.stems ?? ((id, text) => stemsOf(text));
+	const project = options.project ?? "";
+	const kinds = Array.isArray(options.kinds) ? options.kinds : [];
+	const qc = buildQuery(query, idf, assoc, config);
+	const qEcho = String(query).replace(/\s+/g, " ").trim().slice(0, 600);
+	const pool = new Map();
+	for (const row of store.ftsCandidates(qc.terms, config.candidateLimit)) pool.set(row.id, row);
+	for (const row of store.recentCandidates(kinds, Math.min(config.candidateLimit, 600), project)) {
+		if (!pool.has(row.id)) pool.set(row.id, row);
+	}
+	const scored = [];
+	for (const cand of pool.values()) {
+		if (kinds.length > 0 && !kinds.includes(cand.kind)) continue;
+		if (cand.kind === "chat_user" && String(cand.text).replace(/\s+/g, " ").trim().slice(0, 600) === qEcho) continue;
+		if (config.privateProjects.includes(cand.project) && cand.project !== project) continue;
+		if (Number(cand.vver ?? 0) !== VEC_VERSION) continue;
+		const item = { ...cand, vecMap: new Map(JSON.parse(String(cand.vec ?? "[]"))), stems: stemsFor(cand.id, cand.text) };
+		item.score = scoreCandidate(qc, item, { project });
+		item.sameProject = project !== "" && cand.project === project;
+		scored.push(item);
+	}
+	scored.sort((a, b) => b.score - a.score);
+	const limit = Math.max(1, Math.min(50, options.limit ?? config.recallLimit));
+	const threshold = options.minScore ?? config.minRecallScore;
+	const seen = new Set();
+	const picks = [];
+	for (const item of scored) {
+		if (picks.length >= limit) break;
+		if (item.score < threshold) break;
+		const key = clip(item.text, 72);
+		if (seen.has(key)) continue;
+		seen.add(key);
+		picks.push(item);
+	}
+	let fallback = null;
+	if (picks.length === 0 && config.recallFallbackScore > 0 && scored.length > 0) {
+		const best = scored[0];
+		if (best.score >= config.recallFallbackScore) fallback = best;
+	}
+	return { picks, fallback, best: scored[0]?.score ?? 0, candidates: pool.size, expanded: qc.extra.size, query: qc };
 }
 
 /* ── store over node:sqlite ────────────────────────────────────────────── */
@@ -260,7 +694,16 @@ class MemoryStore {
 				key TEXT PRIMARY KEY,
 				value TEXT NOT NULL
 			);
+			CREATE TABLE IF NOT EXISTS mh_terms (
+				term TEXT PRIMARY KEY,
+				df INTEGER NOT NULL DEFAULT 0,
+				neighbors TEXT NOT NULL DEFAULT '[]',
+				updated_at INTEGER NOT NULL DEFAULT 0
+			);
 		`);
+		/* schema v3 — vector generation marker + learned associations */
+		try { this.db.exec(`ALTER TABLE chunks ADD COLUMN vver INTEGER NOT NULL DEFAULT 0`); } catch { /* column exists */ }
+		try { this.db.exec(`CREATE INDEX IF NOT EXISTS chunks_vver ON chunks(vver)`); } catch { /* ignore */ }
 		/* schema v2 — project memory: sessions, goals, steps, learned skills */
 		this.db.exec(`
 			CREATE TABLE IF NOT EXISTS mh_sessions (
@@ -324,11 +767,11 @@ class MemoryStore {
 
 	prepare(sql) { return this.db.prepare(sql); }
 
-	upsertChunk(id, kind, text, project, sessionId, turn, ts, vec) {
-		this.db.prepare(`INSERT INTO chunks (id, kind, text, project, session_id, turn, ts, vec)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-			ON CONFLICT(id) DO UPDATE SET ts = excluded.ts, vec = excluded.vec`).run(
-			id, kind, text, project, sessionId, turn, ts, JSON.stringify(vec)
+	upsertChunk(id, kind, text, project, sessionId, turn, ts, vec, vver = VEC_VERSION) {
+		this.db.prepare(`INSERT INTO chunks (id, kind, text, project, session_id, turn, ts, vec, vver)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(id) DO UPDATE SET ts = excluded.ts, vec = excluded.vec, vver = excluded.vver`).run(
+			id, kind, text, project, sessionId, turn, ts, JSON.stringify(vec), vver
 		);
 	}
 
@@ -343,14 +786,110 @@ class MemoryStore {
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(key, String(value));
 	}
 
+	metaDel(key) { this.db.prepare(`DELETE FROM meta WHERE key = ?`).run(key); }
+
 	readIdf() {
 		const raw = this.metaGet("idf");
-		return raw === undefined || raw === "" ? { map: new Map(), docCount: 1 } : { map: new Map(Object.entries(JSON.parse(raw))), docCount: raw ? JSON.parse(raw).docCount ?? 1 : 1 };
+		if (raw === undefined || raw === "") return { map: new Map(), docCount: 0 };
+		try {
+			const parsed = JSON.parse(raw);
+			return { map: new Map(Object.entries(parsed.df ?? {})), docCount: Number(parsed.docCount ?? 0) };
+		} catch { return { map: new Map(), docCount: 0 }; }
 	}
 
 	writeIdf(idfDoc) {
 		this.metaPut("idf", JSON.stringify({ docCount: idfDoc.docCount, df: idfDoc.df }));
 	}
+
+	/**
+	 * Index-driven candidate generation: FTS5 prefix match over the query stems
+	 * instead of "the newest 1600 rows", so old chats stay reachable and the
+	 * per-query cost stops growing with the whole store.
+	 */
+	ftsCandidates(stems, limit) {
+		const terms = [...stems].filter((s) => /^[0-9a-zа-яё]{3,}$/.test(s)).slice(0, 24);
+		if (terms.length === 0) return [];
+		const match = terms.map((t) => `"${t}"*`).join(" OR ");
+		try {
+			return this.db.prepare(`SELECT c.id, c.kind, c.text, c.project, c.session_id, c.ts, c.vec, c.vver
+				FROM chunks_fts f JOIN chunks c ON c.rowid = f.rowid
+				WHERE chunks_fts MATCH ? ORDER BY bm25(chunks_fts) LIMIT ?`).all(match, limit);
+		} catch { return []; }
+	}
+
+	/** Recent + same-project rows: freshness and local context next to the FTS hits. */
+	recentCandidates(kinds, limit, project) {
+		const where = kinds.length > 0 ? `kind IN (${kinds.map(() => "?").join(",")})` : "1 = 1";
+		const rows = this.db.prepare(`SELECT id, kind, text, project, session_id, ts, vec, vver
+			FROM chunks WHERE ${where} ORDER BY ts DESC LIMIT ?`).all(...kinds, limit);
+		if (project !== "") {
+			rows.push(...this.db.prepare(`SELECT id, kind, text, project, session_id, ts, vec, vver
+				FROM chunks WHERE project = ? AND ${where} ORDER BY ts DESC LIMIT ?`).all(project, ...kinds, Math.max(50, Math.floor(limit / 2))));
+		}
+		return rows;
+	}
+
+	chunkById(id) {
+		return this.db.prepare(`SELECT id, kind, text, project, session_id, turn, ts, hits FROM chunks WHERE id = ?`).get(id);
+	}
+
+	/** Resolve the short ref shown in the prompt back to the full row. */
+	chunkByRef(ref) {
+		const clean = String(ref).replace(/[^0-9a-f]/gi, "").slice(0, 8);
+		if (clean.length < 4) return undefined;
+		return this.db.prepare(`SELECT id, kind, text, project, session_id, turn, ts, hits
+			FROM chunks WHERE id LIKE ? ORDER BY ts DESC LIMIT 1`).get(`${clean}%`);
+	}
+
+	chunkPage(afterRowid, limit) {
+		return this.db.prepare(`SELECT rowid, id, text FROM chunks WHERE rowid > ? ORDER BY rowid LIMIT ?`).all(afterRowid, limit);
+	}
+
+	setChunkVec(id, vec, vver) {
+		this.db.prepare(`UPDATE chunks SET vec = ?, vver = ? WHERE id = ?`).run(JSON.stringify(vec), vver, id);
+	}
+
+	/** Term → neighbours map, read once per process. */
+	assocLoad() {
+		const map = new Map();
+		try {
+			for (const row of this.db.prepare(`SELECT term, neighbors FROM mh_terms`).all()) {
+				try {
+					const list = JSON.parse(String(row.neighbors ?? "[]"));
+					if (Array.isArray(list) && list.length > 0) map.set(String(row.term), list);
+				} catch { /* one bad row must not poison the map */ }
+			}
+		} catch { /* table absent on an old store */ }
+		return map;
+	}
+
+	assocReplace(entries) {
+		this.db.prepare(`DELETE FROM mh_terms`).run();
+		const stmt = this.db.prepare(`INSERT OR REPLACE INTO mh_terms (term, df, neighbors, updated_at) VALUES (?, ?, ?, ?)`);
+		const now = Date.now();
+		this.db.exec("BEGIN");
+		try {
+			for (const [term, df, neighbors] of entries) stmt.run(term, df, JSON.stringify(neighbors), now);
+			this.db.exec("COMMIT");
+		} catch (error) {
+			try { this.db.exec("ROLLBACK"); } catch { /* ignore */ }
+			throw error;
+		}
+	}
+
+	assocCount() {
+		try { return this.db.prepare(`SELECT COUNT(*) AS n FROM mh_terms`).get()?.n ?? 0; } catch { return 0; }
+	}
+
+	/** Reclaim write amplification: FTS merge, planner stats, WAL truncate. */
+	maintenance() {
+		const done = [];
+		for (const sql of ["PRAGMA optimize", "INSERT INTO chunks_fts(chunks_fts) VALUES('optimize')", "PRAGMA wal_checkpoint(TRUNCATE)"]) {
+			try { this.db.exec(sql); done.push(sql); } catch { /* best-effort */ }
+		}
+		return done;
+	}
+
 
 	candidates(kinds, recentLimit, project) {
 		const rows = kinds.length === 0
@@ -648,19 +1187,20 @@ function apply(ctx, rawConfig) {
 		return;
 	}
 
-	let idf;
+	/* term statistics: rebuilt by the v3 migration, kept current afterwards */
+	let idf = {};
+	let docCount = 0;
 	try {
-		const raw = store.metaGet("idf");
-		idf = raw ? JSON.parse(raw).df ?? JSON.parse(raw) : {};
-	} catch { idf = {}; }
-	let docCount = (() => {
-		try {
-			const raw = JSON.parse(store.metaGet("idf") ?? "{}");
-			return raw.docCount ?? 1;
-		} catch { return 1; }
-	})();
-	const idfView = () => ({ map: new Map(Object.entries(idf)), docCount });
+		const loaded = store.readIdf();
+		idf = Object.fromEntries(loaded.map);
+		docCount = loaded.docCount;
+	} catch { idf = {}; docCount = 0; }
+	const idfView = () => ({ map: termCache, docCount });
 	let idfDirty = 0;
+
+	/* association graph of stems (mined from the corpus, refreshed weekly) */
+	let assoc = store.assocLoad();
+	let assocAt = Number(store.metaGet("assocAt") ?? 0);
 
 	/* per-session live state (process-local cache; the session log stays the truth) */
 	const openTurns = new WeakMap();
@@ -682,7 +1222,7 @@ function apply(ctx, rawConfig) {
 	const disposers = [];
 
 	function trackTerms(text) {
-		for (const w of new Set(wordsOf(text))) {
+		for (const w of stemsOf(text)) {
 			if (w.length < 3) continue;
 			idf[w] = (idf[w] ?? 0) + 1;
 		}
@@ -696,12 +1236,36 @@ function apply(ctx, rawConfig) {
 		return { map: termCache, docCount };
 	}
 
+	/** Stems of a candidate text, cached: re-tokenizing every chunk per query was
+	 *  the dominant cost of recall before (velocity, not size, was the problem). */
+	const stemCache = new Map();
+	function stemsCached(id, text) {
+		let stems = stemCache.get(id);
+		if (stems === undefined) {
+			stems = stemsOf(text);
+			if (stemCache.size > 20000) stemCache.clear();
+			stemCache.set(id, stems);
+		}
+		return stems;
+	}
+
+	function isExcluded(project) {
+		return project !== "" && config.excludeProjects.includes(project);
+	}
+
+	/** Секреты не индексируются: память не должна хранить ключи и токены. */
+	function prepareText(text) {
+		const raw = String(text).replace(/\s+/g, " ").trim();
+		return config.redact ? redact(raw) : raw;
+	}
+
 	function addChunk(kind, text, project, sessionId, turn) {
 		try {
-			const t = String(text).replace(/\s+/g, " ").trim();
+			const t = prepareText(text);
 			if (t.length < (kind === "chat_user" ? 12 : 24)) return null;
+			if (isExcluded(project ?? "")) return null;
 			const id = sha256(`${kind}|${t.slice(0, 3000)}`);
-			store.upsertChunk(id, kind, t, project ?? "", sessionId ?? "", turn ?? 0, Date.now(), [...embed(t, idfCurrent())]);
+			store.upsertChunk(id, kind, t, project ?? "", sessionId ?? "", turn ?? 0, Date.now(), [...embed(t, idfCurrent())], VEC_VERSION);
 			trackTerms(t);
 			return id;
 		} catch (error) {
@@ -739,12 +1303,19 @@ function apply(ctx, rawConfig) {
 					const text = (msg.content ?? []).filter((b) => b?.type === "text").map((b) => b.text ?? "").join("\n");
 					if (text.trim().length < 12) return;
 					addChunk("chat_user", text, meta.project, meta.sessionId, data.turn ?? 0);
-					trackTerms(text);
 					const open = openTurns.get(session) ?? { turn: data.turn ?? 0, project: meta.project, sessionId: meta.sessionId, title: "", userText: "", solution: "", startedAt: ts };
 					open.turn = data.turn ?? open.turn;
 					open.title = open.title ?? clip(text, 160);
 					open.userText = clip(text, 1200);
 					openTurns.set(session, open);
+					if (config.lightragEnabled) {
+						try {
+							const quick = rankMemory(open.userText, { project: meta.project, limit: 1 });
+							if (config.lightragAlways || quick.picks.length === 0 || Number(quick.best ?? 0) < config.lightragWeakBelow) {
+								graphPrefetch(open.userText, meta.project);
+							}
+						} catch { /* the graph is an optional layer */ }
+					}
 					if (config.autoMine) store.templateUpsert(templateKey(text), clip(text, 200), null, ts);
 					if (idfDirty >= 16) {
 						store.writeIdf({ docCount, df: idf });
@@ -903,6 +1474,72 @@ function apply(ctx, rawConfig) {
 		}
 	}
 
+	/* ── vocabulary migration (v3) + learned associations ──────────────────
+	   Both are local computations over the corpus: no LLM, no embedding API,
+	   so a full rebuild of 4k+ chunks costs a few seconds of CPU and zero
+	   tokens. The vocabulary pass also fixes the old df counters, which had
+	   been inflated by double counting and never decayed. */
+
+	function rebuildVocabulary() {
+		const result = vocabularyRebuild(store);
+		idf = result.df;
+		docCount = result.docCount;
+		termCache = new Map(Object.entries(idf));
+		return { terms: result.terms, docs: result.docCount };
+	}
+
+	function rebuildVectors() {
+		return vectorsRebuild(store, idfCurrent);
+	}
+
+	/**
+	 * Co-occurrence associations (PPMI over the corpus) → the vocabulary's own
+	 * thesaurus. Because the author mixes RU and EN in one paragraph, a term and
+	 * its translation end up in the same context and become neighbours: that is
+	 * where `каскад` ↔ `cascade` comes from, with no external model involved.
+	 */
+	function buildAssociations() {
+		const built = associationsBuild(store, idf, docCount, config.assocMinWeight);
+		store.assocReplace(built.entries);
+		assoc = store.assocLoad();
+		assocAt = Date.now();
+		store.metaPut("assocAt", String(assocAt));
+		return { pairs: built.pairs, terms: built.entries.length };
+	}
+
+	function runVecMigration() {
+		if (Number(store.metaGet("vecver") ?? 0) >= VEC_VERSION) return false;
+		try {
+			store.metaDel("idf");
+			const vocab = rebuildVocabulary();
+			const count = rebuildVectors();
+			const graph = buildAssociations();
+			store.metaPut("vecver", String(VEC_VERSION));
+			store.metaPut("vecverAt", String(Date.now()));
+			store.metaPut("vecverStats", JSON.stringify({ ...vocab, vectors: count, ...graph }));
+			warn(ctx, `vocab v${VEC_VERSION}: ${vocab.docs} chunks, ${vocab.terms} stems, ${count} vectors, ${graph.terms} associated terms`);
+			return true;
+		} catch (error) {
+			warn(ctx, `vocab migration failed: ${String(error)}`);
+			store.metaPut("vecverError", `${new Date().toISOString()} ${String(error?.message ?? error)}`);
+			return false;
+		}
+	}
+
+	function runMaintenance() {
+		try {
+			store.maintenance();
+			if (assoc.size === 0 || Date.now() - assocAt > 7 * 24 * 60 * 60 * 1000) buildAssociations();
+			if (config.stepRetentionDays > 0) {
+				const cutoff = Date.now() - config.stepRetentionDays * 24 * 60 * 60 * 1000;
+				store.db.prepare(`DELETE FROM mh_steps WHERE ts < ?`).run(cutoff);
+			}
+			store.metaPut("maintenanceAt", String(Date.now()));
+		} catch (error) {
+			warn(ctx, `maintenance failed: ${String(error)}`);
+		}
+	}
+
 	/* ── routine mining ── */
 	let lastMiningAt = 0;
 	async function runMining(force = false) {
@@ -991,33 +1628,108 @@ function apply(ctx, rawConfig) {
 	}, 60 * 60 * 1000);
 	disposers.push(() => clearInterval(weeklyTimer));
 
-	/* ── recall/matching ── */
+	/* ── recall: index-driven candidates + association-expanded query ── */
+	function rankMemory(query, options = {}) {
+		return searchMemory(store, query, {
+			project: options.project ?? "",
+			kinds: options.kinds ?? [],
+			limit: options.limit,
+			minScore: options.minScore,
+			config,
+			idf: idfCurrent(),
+			assoc,
+			stems: stemsCached
+		});
+	}
+
+	/* ── LightRAG graph client (associative layer, no cost when unused) ──
+	   The graph answers what a vector index structurally cannot: multi-hop links
+	   between chats and workspaces ("this failure was fixed the same way in another
+	   project"). It is queried ONLY when the local hybrid recall comes up weak, so
+	   a normal step never pays for it. Results are cached per query, and any
+	   failure (server down, timeout) degrades to silence, never to an error. */
+
+	const CYR_SLUG = { а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f", х: "h", ц: "c", ч: "ch", ш: "sh", щ: "sch", ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya" };
+
+	/** Workspace id used in LightRAG file_source; mirrors scripts/build_docs.py::slug. */
+	function lightragSlug(project) {
+		const out = [];
+		for (const ch of String(project || "shared")) {
+			const low = ch.toLowerCase();
+			if (CYR_SLUG[low] !== undefined) out.push(CYR_SLUG[low]);
+			else if (/[A-Za-z0-9_]/.test(ch)) out.push(ch);
+			else if (/[\s\-/.]/.test(ch)) out.push("_");
+		}
+		return out.join("").replace(/_+/g, "_").replace(/^_+|_+$/g, "") || "shared";
+	}
+
+	const graphCache = new Map();
+	const graphInflight = new Map();
+	const graphKey = (query, project) => `${lightragSlug(project)}|${String(query).replace(/\s+/g, " ").trim().slice(0, 240)}`;
+
+	function graphCached(query, project) {
+		const hit = graphCache.get(graphKey(query, project));
+		if (hit === undefined) return null;
+		if (Date.now() - hit.at > config.lightragCacheTtlMs) { graphCache.delete(graphKey(query, project)); return null; }
+		return hit.text;
+	}
+
+	/** One LightRAG query; `only_need_context` skips answer generation (fewer tokens). */
+	async function graphFetch(query, project) {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), config.lightragTimeoutMs);
+		try {
+			const res = await fetch(`${String(config.lightragUrl).replace(/\/+$/, "")}/query`, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					query: String(query).slice(0, 2000),
+					mode: config.lightragMode,
+					only_need_context: true,
+					top_k: config.lightragTopK,
+					hl_keywords: [],
+					ll_keywords: []
+				}),
+				signal: controller.signal
+			});
+			if (!res.ok) { store.metaPut("graphError", `${res.status} at ${new Date().toISOString()}`); return ""; }
+			const doc = await res.json();
+			const text = String(doc?.response ?? "").trim();
+			if (text.length === 0) return "";
+			store.metaPut("graphLastOk", new Date().toISOString());
+			return text;
+		} catch (error) {
+			store.metaPut("graphError", `${String(error?.name ?? error)} at ${new Date().toISOString()}`);
+			return "";
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	/** Fire-and-forget prefetch, deduplicated per query and bounded by the HTTP timeout. */
+	function graphPrefetch(query, project) {
+		if (!config.lightragEnabled) return;
+		const text = String(query ?? "").trim();
+		if (text.length < 12) return;
+		const key = graphKey(text, project);
+		if (graphCache.has(key) || graphInflight.has(key)) return;
+		const task = graphFetch(text, project)
+			.then((context) => {
+				if (context.length > 0) {
+					graphCache.set(key, { text: context, at: Date.now() });
+					if (graphCache.size > 200) graphCache.delete(graphCache.keys().next().value);
+					stats.graphHits = (stats.graphHits ?? 0) + 1;
+					store.metaPut("graphHits", String(stats.graphHits));
+				}
+				return context;
+			})
+			.catch(() => "")
+			.finally(() => graphInflight.delete(key));
+		graphInflight.set(key, task);
+	}
+
 	function recallFor(session, query, kinds = []) {
-		const project = sessionMeta(session).project;
-		const qvec = embed(query, idfCurrent());
-		const scored = [];
-		const qEcho = String(query).replace(/\s+/g, " ").trim().slice(0, 600);
-		for (const cand of store.candidates(kinds, 1600, project)) {
-			if (cand.kind === "chat_user" && String(cand.text).replace(/\s+/g, " ").trim().slice(0, 600) === qEcho) continue;
-			const candVec = new Map(JSON.parse(cand.vec));
-			const cos = cosine(qvec, candVec);
-			const cov = coverage(query, cand.text);
-			const bonus = project !== "" && cand.project === project ? 0.06 : 0;
-			const recency = Math.exp(-Math.max(0, Date.now() - cand.ts) / 86400000 / 45);
-			const score = 0.68 * cos + 0.32 * cov + bonus + 0.04 * recency;
-			if (score >= config.minRecallScore) scored.push({ ...cand, score, sameProject: cand.project === project });
-		}
-		scored.sort((a, b) => b.score - a.score);
-		const seen = new Set();
-		const picks = [];
-		for (const item of scored) {
-			if (picks.length >= config.recallLimit) break;
-			const key = clip(item.text, 72);
-			if (seen.has(key)) continue;
-			seen.add(key);
-			picks.push(item);
-		}
-		return picks;
+		return rankMemory(query, { project: sessionMeta(session).project, kinds }).picks;
 	}
 
 	function matchRoutine(query) {
@@ -1061,15 +1773,36 @@ function apply(ctx, rawConfig) {
 							"</routine>"
 						].join("\n"));
 					}
-					const picks = recallFor(session, query);
+					const ranked = rankMemory(query, { project: sessionMeta(session).project });
+					const picks = ranked.picks;
 					if (picks.length > 0) {
 						stats.recallHits += 1;
 						store.metaPut("recallHits", String(stats.recallHits));
-						const perItem = Math.max(90, Math.floor((config.recallChars / Math.max(1, picks.length)) - 30));
-						parts.push(picks.map((p) =>
-							`• [${p.kind}${p.sameProject ? ", текущий ws" : `, ws ${clip(p.project, 20)}`}] ${clip(p.text, perItem)}`
-						).join("\n"));
+						const refCost = 26; // «[#ab12cd34 · kind · ws · дата]»
+						const perItem = Math.max(70, Math.floor((config.recallChars / Math.max(1, picks.length)) - refCost));
+						parts.push(picks.map((p) => `• [${sourceStamp(p)}] ${clip(p.text, perItem)}`).join("\n"));
 						for (const p of picks) store.punchHit(p.id);
+					} else if (ranked.fallback !== null) {
+						/* near miss: one short line instead of silence, only when enabled */
+						const best = ranked.fallback;
+						stats.fallbackHits = (stats.fallbackHits ?? 0) + 1;
+						store.metaPut("fallbackHits", String(stats.fallbackHits));
+						parts.push(`• (слабое совпадение) [${sourceStamp(best)}] ${clip(best.text, config.fallbackChars)}`);
+						store.punchHit(best.id);
+					}
+					let graphUsed = 0;
+					if (config.lightragEnabled && (config.lightragAlways || picks.length === 0 || Number(ranked.best ?? 0) < config.lightragWeakBelow)) {
+						const project = sessionMeta(session).project;
+						const raw = graphCached(query, project);
+						if (raw !== null) {
+							const trimmed = clip(raw.replace(/\s+/g, " "), config.lightragChars);
+							if (trimmed.length > 40) {
+								graphUsed = trimmed.length;
+								stats.graphInjections = (stats.graphInjections ?? 0) + 1;
+								store.metaPut("graphInjections", String(stats.graphInjections));
+								parts.push(`Граф знаний (связи между чатами и workspace; подробности — tool memory_graph):\n${trimmed}`);
+							}
+						}
 					}
 					if (parts.length === 0) return "";
 					stats.injections += 1;
@@ -1077,7 +1810,7 @@ function apply(ctx, rawConfig) {
 					stats.injectedChars += block.length;
 					store.metaPut("injections", String(stats.injections));
 					store.metaPut("injectedChars", String(stats.injectedChars));
-					return clip(block, config.recallChars);
+					return clip(block, config.recallChars + graphUsed);
 				} catch (error) {
 					warn(ctx, `recall failed: ${String(error)}`);
 					return "";
@@ -1196,11 +1929,17 @@ function apply(ctx, rawConfig) {
 				},
 				async execute(args, exec) {
 					const session = exec?.agent?.session;
-					const all = recallFor(session, args.query, args.kinds ?? []);
-					const rows = (all.slice(0, Math.max(1, Math.min(10, args.limit ?? 5))));
+					const limit = Math.max(1, Math.min(10, args.limit ?? 5));
+					const ranked = rankMemory(args.query, {
+						project: session !== undefined ? sessionMeta(session).project : "",
+						kinds: args.kinds ?? [],
+						limit,
+						minScore: 0.28
+					});
+					const rows = ranked.picks;
 					for (const row of rows) store.punchHit(row.id);
 					return {
-						hits: rows.map((r, i) => `${i + 1}. [${r.kind}${r.sameProject ? ", текущий ws" : `, ws ${clip(r.project, 24)}`}] score ${r.score.toFixed(2)} — ${clip(r.text, 260)}`),
+						hits: rows.map((r, i) => `${i + 1}. [${sourceStamp(r)}] score ${r.score.toFixed(2)} — ${clip(r.text, 300)}`),
 						count: rows.length
 					};
 				}
@@ -1237,6 +1976,67 @@ function apply(ctx, rawConfig) {
 				}
 			}));
 
+			disposers.push(ctx.tools.register({
+				name: "memory_source",
+				description: "Resolve a memory reference (#ab12cd34) shown in the injected memory block or returned by memory_search into its full source: workspace, session, turn, timestamp and the complete text. Use it before relying on an old note.",
+				parameters: {
+					type: "object",
+					additionalProperties: false,
+					required: ["ref"],
+					properties: {
+						ref: { type: "string", description: "Short reference from the memory block, e.g. #ab12cd34" },
+						chars: { type: "integer", description: "How much of the source text to return (default 1200)" }
+					}
+				},
+				output: {
+					schema: { type: "object", additionalProperties: false, required: ["text"], properties: { text: { type: "string" } } },
+					render: (_args, value) => [{ type: "text", text: value.text }]
+				},
+				async execute(args) {
+					const row = store.chunkByRef(args.ref);
+					if (row === undefined || row === null) return { text: `Источник «${args.ref}» в памяти не найден — возможно, запись вычищена или ссылка устарела.` };
+					const when = new Date(Number(row.ts ?? 0));
+					const stamp = Number.isNaN(when.getTime()) ? "—" : when.toISOString().replace("T", " ").slice(0, 16);
+					const lines = [
+						`Источник ${chunkRef(row.id)}`,
+						`— тип: ${row.kind}`,
+						`— workspace: ${row.project || "—"}`,
+						`— сессия: ${row.session_id || "—"}${row.turn ? `, ход ${row.turn}` : ""}`,
+						`— время: ${stamp} (UTC)`,
+						`— показов из памяти: ${row.hits ?? 0}`,
+						"",
+						clip(row.text, Math.max(200, Math.min(4000, args.chars ?? 1200)))
+					];
+					return { text: lines.join("\n") };
+				}
+			}));
+
+			disposers.push(ctx.tools.register({
+				name: "memory_graph",
+				description: "Query the LightRAG knowledge graph: entities and relations extracted from every chat and workspace. Use for cross-project or multi-hop questions ('where did we solve X before', 'what connects A and B') that plain memory_search cannot answer.",
+				parameters: {
+					type: "object",
+					additionalProperties: false,
+					required: ["query"],
+					properties: {
+						query: { type: "string", description: "What to explore in the graph" },
+						mode: { type: "string", enum: ["mix", "local", "global", "hybrid", "naive"], description: "Retrieval mode (default: mix)" }
+					}
+				},
+				output: {
+					schema: { type: "object", additionalProperties: false, required: ["context", "found"], properties: { context: { type: "string" }, found: { type: "boolean" } } },
+					render: (_args, value) => [{ type: "text", text: value.found ? value.context : "Граф ничего не нашёл (или сервис недоступен)." }]
+				},
+				async execute(args, exec) {
+					const session = exec?.agent?.session;
+					const project = session !== undefined ? sessionMeta(session).project : "";
+					const cached = graphCached(args.query, project);
+					const text = cached !== null ? cached : await graphFetch(args.query, project);
+					/* ponytail: hard 4k cap — the raw graph dump is tens of KB and would
+					   swamp the model; the full text stays available via /api/memory-hub/graph. */
+					return { context: clip(text, 4000), found: text.length > 0 };
+				}
+			}));
 			disposers.push(ctx.tools.register({
 				name: "memory_routines",
 				description: "Inspect mined routines (repeated request templates across all chats). approve/forget act on the user-confirmed instruction only.",
@@ -1377,6 +2177,103 @@ function apply(ctx, rawConfig) {
 				path: "/api/memory-hub/run-mining",
 				handler: async (req, res) => { try { await runMining(true); json(res, { ok: true }); } catch (e) { warn(ctx, String(e)); json(res, { error: String(e) }); } }
 			}));
+			/* read-only search for other clients (dashboard, scripts) — no tokens */
+			disposers.push(ctx.webServer.register({
+				kind: "exact",
+				path: "/api/memory-hub/search",
+				handler: (req, res) => {
+					try {
+						const url = new URL(req.url, "http://localhost");
+						const q = url.searchParams.get("q") ?? url.searchParams.get("query") ?? "";
+						if (q.trim().length < 2) return json(res, { hits: [], count: 0, error: "empty query" });
+						const limit = Math.max(1, Math.min(20, Number(url.searchParams.get("limit") ?? 5)));
+						const project = url.searchParams.get("project") ?? "";
+						const ranked = rankMemory(q, { project, limit, minScore: Number(url.searchParams.get("min") ?? 0.28) });
+						return json(res, {
+							count: ranked.picks.length,
+							candidates: ranked.candidates,
+							expanded: ranked.expanded,
+							hits: ranked.picks.map((p) => ({
+								ref: chunkRef(p.id),
+								kind: p.kind,
+								project: p.project,
+								score: Number(p.score.toFixed(3)),
+								ts: p.ts,
+								text: clip(p.text, 600)
+							}))
+						});
+					} catch (e) { warn(ctx, String(e)); return json(res, { hits: [], count: 0, error: String(e) }); }
+				}
+			}));
+			disposers.push(ctx.webServer.register({
+				kind: "exact",
+				path: "/api/memory-hub/source",
+				handler: (req, res) => {
+					try {
+						const url = new URL(req.url, "http://localhost");
+						const ref = url.searchParams.get("ref") ?? "";
+						const row = store.chunkByRef(ref);
+						return json(res, row === undefined ? { found: false } : {
+							found: true,
+							ref: chunkRef(row.id),
+							id: row.id,
+							kind: row.kind,
+							project: row.project,
+							session: row.session_id,
+							turn: row.turn,
+							ts: row.ts,
+							hits: row.hits,
+							text: row.text
+						});
+					} catch (e) { return json(res, { found: false, error: String(e) }); }
+				}
+			}));
+			/* graph layer: query passthrough + liveness, so the dashboard and other
+			   clients can use the same knowledge without touching LightRAG directly */
+			disposers.push(ctx.webServer.register({
+				kind: "exact",
+				path: "/api/memory-hub/graph",
+				handler: async (req, res) => {
+					try {
+						const url = new URL(req.url, "http://localhost");
+						const q = url.searchParams.get("q") ?? url.searchParams.get("query") ?? "";
+						if (q.trim().length < 3) return json(res, { found: false, context: "", error: "empty query" });
+						const text = await graphFetch(q, url.searchParams.get("project") ?? "");
+						return json(res, { found: text.length > 0, chars: text.length, context: clip(text, 4000), enabled: config.lightragEnabled, url: config.lightragUrl });
+					} catch (e) { return json(res, { found: false, error: String(e) }); }
+				}
+			}));
+			disposers.push(ctx.webServer.register({
+				kind: "exact",
+				path: "/api/memory-hub/lightrag",
+				handler: async (req, res) => {
+					const out = { enabled: config.lightragEnabled, url: config.lightragUrl, mode: config.lightragMode, topK: config.lightragTopK, ok: false };
+					try {
+						const ctl = new AbortController();
+						const timer = setTimeout(() => ctl.abort(), 3000);
+						const health = await fetch(`${String(config.lightragUrl).replace(/\/+$/, "")}/health`, { signal: ctl.signal });
+						clearTimeout(timer);
+						out.ok = health.ok;
+						if (health.ok) {
+							const doc = await health.json();
+							out.server = { status: doc?.status ?? "", workspace: doc?.workspace ?? "", docs: doc?.pipeline?.documents ?? doc?.documents ?? null };
+						}
+					} catch (e) { out.error = String(e); }
+					out.cache = { entries: graphCache.size, inflight: graphInflight.size, hits: Number(store.metaGet("graphHits") ?? 0), injections: Number(store.metaGet("graphInjections") ?? 0), lastOk: store.metaGet("graphLastOk") ?? "", lastError: store.metaGet("graphError") ?? "" };
+					return json(res, out);
+				}
+			}));
+			disposers.push(ctx.webServer.register({
+				kind: "exact",
+				path: "/api/memory-hub/rebuild",
+				handler: (req, res) => {
+					try {
+						store.metaDel("vecver");
+						const ok = runVecMigration();
+						return json(res, { ok, vecver: Number(store.metaGet("vecver") ?? 0), stats: store.metaGet("vecverStats") ?? "" });
+					} catch (e) { return json(res, { ok: false, error: String(e) }); }
+				}
+			}));
 		}
 	} catch (error) {
 		warn(ctx, `dashboard api failed: ${String(error)}`);
@@ -1403,23 +2300,79 @@ function apply(ctx, rawConfig) {
 			estimatedTokensSaved: Math.round(stats.injectedChars * 0.26),
 			routineHits: stats.routineHits,
 			recallHits: stats.recallHits,
+			fallbackHits: Number(store.metaGet("fallbackHits") ?? 0),
+			graph: {
+				enabled: config.lightragEnabled,
+				url: config.lightragUrl,
+				mode: config.lightragMode,
+				hits: Number(store.metaGet("graphHits") ?? 0),
+				injections: Number(store.metaGet("graphInjections") ?? 0),
+				cacheEntries: graphCache.size,
+				lastOk: store.metaGet("graphLastOk") ?? "",
+				lastError: store.metaGet("graphError") ?? ""
+			},
+			/* retrieval internals, so the dashboard shows which index generation runs */
+			vocabulary: {
+				version: Number(store.metaGet("vecver") ?? 0),
+				stems: Number(JSON.parse(store.metaGet("idf") ?? "{}").docCount ?? 0) > 0 ? idfView().map.size : 0,
+				associatedTerms: store.assocCount(),
+				assocAt: Number(store.metaGet("assocAt") ?? 0),
+				lastRebuildAt: Number(store.metaGet("vecverAt") ?? 0),
+				lastMaintenanceAt: Number(store.metaGet("maintenanceAt") ?? 0)
+			},
 			lastEventAt: stats.lastEventAt,
 			lastAnalysisAt: Number(store.metaGet("lastAnalysisAt") ?? 0),
 			lastMiningAt: Number(store.metaGet("lastMiningAt") ?? 0),
 			vault: { path: config.vaultPath, ok: config.vaultSync ? fs.existsSync(config.vaultPath) : false },
 			styleSamples: style.samples ?? 0,
-			hotTerms: store.hotTerms(10)
+			hotTerms: store.hotTerms(10),
+			// Effective tuning, so the dashboard and the offline tuner can confirm
+			// which numbers the RUNNING plugin actually uses.
+			config: {
+				recallChars: config.recallChars,
+				recallLimit: config.recallLimit,
+				minRecallScore: config.minRecallScore,
+				recallFallbackScore: config.recallFallbackScore,
+				fallbackChars: config.fallbackChars,
+				assocTop: config.assocTop,
+				assocWeight: config.assocWeight,
+				candidateLimit: config.candidateLimit,
+				routineMinScore: config.routineMinScore,
+				goalDriftMin: config.goalDriftMin,
+				goalGuardChars: config.goalGuardChars,
+				skillMinScore: config.skillMinScore,
+				autoMine: config.autoMine,
+				weeklyAnalysis: config.weeklyAnalysis,
+				vaultSync: config.vaultSync,
+				redact: config.redact,
+				excludeProjects: config.excludeProjects,
+				privateProjects: config.privateProjects,
+				stepRetentionDays: config.stepRetentionDays,
+				lightragEnabled: config.lightragEnabled,
+				lightragUrl: config.lightragUrl,
+				lightragMode: config.lightragMode,
+				lightragTopK: config.lightragTopK,
+				lightragChars: config.lightragChars,
+				lightragWeakBelow: config.lightragWeakBelow,
+				lightragAlways: config.lightragAlways,
+				lightragCrossWorkspace: config.lightragCrossWorkspace
+			}
 		};
 	}
 
 	/* ── warm-up + lifecycle ── */
 	const warmTimer = setTimeout(() => {
+		runVecMigration();
+		runMaintenance();
 		runMining(true).finally(() => {
 			const last = Number(store.metaGet("lastAnalysisAt") ?? 0);
 			if (config.weeklyAnalysis && Date.now() - last >= 7 * 24 * 60 * 60 * 1000) runWeeklyAnalysis();
 		});
-	}, 4000);
+	}, 3000);
 	disposers.push(() => clearTimeout(warmTimer));
+
+	const maintenanceTimer = setInterval(runMaintenance, 6 * 60 * 60 * 1000);
+	disposers.push(() => clearInterval(maintenanceTimer));
 
 	ctx.effect?.(() => () => {
 		for (const disposer of disposers) {
@@ -1433,7 +2386,30 @@ function apply(ctx, rawConfig) {
 
 const Config = undefined;
 /** Internals exposed for offline tests only (not a public API). */
-const __test = { MemoryStore, openDatabase, embed, cosine, coverage, templateKey, clip, normalizeConfig };
+const __test = {
+	MemoryStore,
+	openDatabase,
+	embed,
+	cosine,
+	coverage,
+	stemsOf,
+	stemWord,
+	rawWords,
+	templateKey,
+	clip,
+	redact,
+	chunkRef,
+	sourceStamp,
+	buildQuery,
+	scoreCandidate,
+	searchMemory,
+	vocabularyRebuild,
+	vectorsRebuild,
+	associationsBuild,
+	normalizeConfig,
+	VECTOR_DIM,
+	VEC_VERSION
+};
 export { name, Config, inject, apply, __test };
 
 

@@ -1,0 +1,38 @@
+{
+  "name": "dsh-autoharness",
+  "version": "0.1.0",
+  "displayName": "AutoHarness (self-learning skills)",
+  "description": "A self-maintaining skill layer for DeepSeek Harness, modelled on tigerless-labs/autoharness: it captures real sessions, reflects every N tool calls into skill intents, promotes them through a single validating writer, indexes them at session start, and retires unused skills by adherence instead of a benchmark.",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "README.md",
+    "icon.svg",
+    "locale/*.json"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "autoharness",
+    "skills",
+    "self-learning",
+    "harness-engineering",
+    "agent-skills"
+  ],
+  "author": "rukazax",
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
