@@ -7,6 +7,9 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 export const name = "dsh-mcp-client";
 export const inject = [];
@@ -37,6 +40,14 @@ class McpConnection {
     this.tools = [];
     this.serverInfo = null;
     this.disposed = false;
+    this._startPromise = null;
+  }
+
+  /** Ленивый старт: первый вызов запускает сервер ровно один раз. */
+  async ensureStarted() {
+    if (this.proc) return;
+    if (!this._startPromise) this._startPromise = this.start();
+    await this._startPromise;
   }
 
   async start() {
@@ -54,6 +65,9 @@ class McpConnection {
       }
     });
     this.proc.on("error", (err) => this.logger.error?.(`[mcp:${this.config.id}] spawn error: ${err.message}`));
+    // EPIPE при записи в уже умерший сервер не должен быть фатальным для процесса
+    this.proc.stdin.on("error", (err) =>
+      this.logger.error?.(`[mcp:${this.config.id}] stdin error: ${err.code ?? err.message}`));
     this.proc.on("exit", (code) => {
       if (this.disposed) return;
       this.logger.error?.(`[mcp:${this.config.id}] exited with code ${code}`);
@@ -121,6 +135,8 @@ class McpConnection {
 
   notify(method, params) {
     if (!this.proc || this.disposed) return;
+    const stdin = this.proc.stdin;
+    if (!stdin || stdin.destroyed || stdin.writableEnded || !stdin.writable) return;
     try {
       this.proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", method, params }) + "\n");
     } catch (err) {
@@ -154,11 +170,33 @@ function toolParamsFromMcp(inputSchema) {
   return { type: "object", properties: {}, additionalProperties: false };
 }
 
+const CACHE_DIR = join(homedir(), ".dsh", "storages", "mcp-tool-cache");
+
+function cachePath(id) {
+  return join(CACHE_DIR, String(id).replace(/[^A-Za-z0-9_.-]/g, "_") + ".json");
+}
+
+function readCache(id, fingerprint) {
+  try {
+    const data = JSON.parse(readFileSync(cachePath(id), "utf8"));
+    if (data?.fingerprint === fingerprint && Array.isArray(data.tools)) return data.tools;
+  } catch {}
+  return null;
+}
+
+function writeCache(id, fingerprint, tools, serverInfo) {
+  try {
+    mkdirSync(CACHE_DIR, { recursive: true });
+    writeFileSync(cachePath(id), JSON.stringify({ fingerprint, tools, serverInfo, savedAt: new Date().toISOString() }));
+  } catch {}
+}
+
 export function apply(ctx, config = {}) {
   const logger = ctx.logger ?? console;
   const serverConfigs = Array.isArray(config.servers) && config.servers.length > 0
     ? config.servers
     : DEFAULT_SERVERS;
+  const lazy = config.lazy !== false; // ленивый старт MCP по умолчанию
   const connections = [];
   const disposers = [];
 
@@ -192,9 +230,44 @@ export function apply(ctx, config = {}) {
   for (const serverConfig of serverConfigs) {
     const conn = new McpConnection(serverConfig, logger);
     connections.push(conn);
+    const fingerprint = JSON.stringify([serverConfig.command, serverConfig.args ?? []]);
+
+    // Обёртка исполнения: перед вызовом гарантируем запуск сервера.
+    const registerLazy = (mcpTool) => {
+      const toolName = `${conn.config.id}__${String(mcpTool.name).replace(/[^A-Za-z0-9_]/g, "_")}`;
+      const description = `[MCP ${conn.config.id}] ${mcpTool.description ?? mcpTool.name}`;
+      try {
+        const remove = ctx.inject(["tools"], (toolCtx) =>
+          toolCtx.tools.register({
+            name: toolName,
+            description,
+            parameters: toolParamsFromMcp(mcpTool.inputSchema),
+            output: { schema: { type: "object" }, render: (_a, v) => [{ type: "text", text: String(v?.text ?? "") }] },
+            isConcurrencySafe: () => true,
+            execute: async (args) => {
+              await conn.ensureStarted();
+              const result = await conn.callTool(mcpTool.name, args);
+              if (result.isError) throw new Error(result.text || `MCP tool ${mcpTool.name} failed`);
+              return result;
+            },
+          }),
+        );
+        disposers.push(remove);
+      } catch (err) {
+        logger.error?.(`[mcp:${conn.config.id}] failed to register ${toolName}: ${err?.message ?? err}`);
+      }
+    };
+
+    const cached = lazy ? readCache(serverConfig.id, fingerprint) : null;
+    if (cached) {
+      for (const mcpTool of cached) registerLazy(mcpTool);
+      logger.info?.(`[mcp:${serverConfig.id}] lazy: ${cached.length} tool(s) from cache`);
+      continue;
+    }
     conn.start()
       .then(() => {
         for (const mcpTool of conn.tools) registerTool(conn, mcpTool);
+        writeCache(serverConfig.id, fingerprint, conn.tools, conn.serverInfo);
       })
       .catch((err) => {
         logger.error?.(`[mcp:${serverConfig.id}] initialization failed: ${err?.message ?? err}`);

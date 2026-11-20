@@ -1225,14 +1225,19 @@ function apply(ctx, rawConfig) {
 		for (const w of stemsOf(text)) {
 			if (w.length < 3) continue;
 			idf[w] = (idf[w] ?? 0) + 1;
+			// держим кэш словаря в актуальном состоянии по одному термину —
+			// полная пересборка Map на каждый чанк съедала десятки секунд CPU
+			if (termCache) termCache.set(w, idf[w]);
 		}
 		docCount += 1;
 		idfDirty += 1;
 	}
 
 	let termCache = new Map(Object.entries(idf).map(([k, v]) => [k, v]));
+	/* Раньше idfCurrent() на КАЖДЫЙ вызов делал Object.keys(idf) (O(n) по словарю в
+	   сотни тысяч стемов) — при массовой индексации это десятки секунд CPU.
+	   Теперь кэш поддерживается инкрементально в trackTerms, а чтение — O(1). */
 	function idfCurrent() {
-		if (termCache.size !== Object.keys(idf).length) termCache = new Map(Object.entries(idf));
 		return { map: termCache, docCount };
 	}
 
@@ -2361,14 +2366,17 @@ function apply(ctx, rawConfig) {
 	}
 
 	/* ── warm-up + lifecycle ── */
-	const warmTimer = setTimeout(() => {
+	// Прогрев запускаем не в момент старта (boot длится десятки секунд и прогрев
+	// конкурировал с ним за главный поток), а через 90 с после старта; сама работа
+	// выполняется в idle-колбэке.
+	const warmTimer = setTimeout(() => setImmediate(() => {
 		runVecMigration();
 		runMaintenance();
 		runMining(true).finally(() => {
 			const last = Number(store.metaGet("lastAnalysisAt") ?? 0);
 			if (config.weeklyAnalysis && Date.now() - last >= 7 * 24 * 60 * 60 * 1000) runWeeklyAnalysis();
 		});
-	}, 3000);
+	}), 90000);
 	disposers.push(() => clearTimeout(warmTimer));
 
 	const maintenanceTimer = setInterval(runMaintenance, 6 * 60 * 60 * 1000);
