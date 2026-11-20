@@ -1,0 +1,3 @@
+- insert:
+    - id: local-session-link
+      name: '@local/dsh-session-link'
