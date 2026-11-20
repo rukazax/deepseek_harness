@@ -77,6 +77,7 @@ export async function apply(ctx, config = {}) {
     if (rescue) {
       try {
         agent.followup({
+          role: 'user',
           content: [{ type: 'text', text: `[llm-failover] Сбой модели: ${failure.code} на ${provider}. Модель переключена на ${entry.provider}/${entry.model}. Продолжи выполнение последней задачи с места прерывания: повтори невыполненный шаг и доведи работу до конца.` }],
           source: { kind: 'user' },
         })
